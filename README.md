@@ -1,3 +1,3 @@
 # Cache
 
-A description of this package.
+Useful caching data structures in Swift 
