@@ -4,16 +4,16 @@
 
 import Foundation
 
-public protocol CachePolicyProtocol {
+public protocol CachePolicy {
     associatedtype Token: Hashable
 
-    init(maximumCount: Int)
+    init()
 
     mutating func insert() -> Token
 
     mutating func use(_ token: Token)
 
-    mutating func removeLeastRecentlyUsed() -> Token?
+    mutating func remove() -> Token?
     mutating func remove(_ token: Token)
     mutating func removeAll(keepingCapacity keepCapacity: Bool)
 }
