@@ -4,14 +4,22 @@
 
 import Foundation
 
-public struct Cache<Key, Value, Policy>
+public typealias CostValue = Comparable & AdditiveArithmetic & Numeric
+
+public struct Cache<Key, Value, Cost, Policy>
 where
     Key: Hashable,
-    Policy: CachePolicy
+    Policy: CachePolicy,
+    Cost: CostValue
 {
     public typealias Element = (key: Key, value: Value)
 
     internal typealias Token = Policy.Token
+
+    fileprivate struct ElementContainer {
+        var cost: Cost
+        var element: Element
+    }
 
     /// Complexity: O(`1`).
     public var isEmpty: Bool {
@@ -27,24 +35,34 @@ where
         self.tokensByKey.capacity
     }
 
-    fileprivate private(set) var totalCostLimit: Int?
-    fileprivate private(set) var totalCost: Int
+    public var totalCostLimit: Cost? {
+        didSet {
+            guard let totalCostLimit = self.totalCostLimit else {
+                return
+            }
+
+            self.removeWhile(
+                totalCostAbove: totalCostLimit
+            )
+        }
+    }
+
+    public let defaultCost: Cost
+
+    public private(set) var totalCost: Cost
+    
     fileprivate private(set) var tokensByKey: [Key: Token]
-    fileprivate private(set) var elementsByToken: [Token: Element]
+    fileprivate private(set) var elementsByToken: [Token: ElementContainer]
     fileprivate private(set) var policy: Policy
 
-    fileprivate init(
-        totalCostLimit: Int
+    public init(
+        totalCostLimit: Cost? = nil,
+        defaultCost: Cost
     ) {
-        assert(totalCostLimit >= 0)
-
-        let totalCostLimit = Self.totalCostLimitFor(
-            totalCostLimit: totalCostLimit
-        )
-
         self.init(
             totalCostLimit: totalCostLimit,
-            totalCost: .init(),
+            defaultCost: defaultCost,
+            totalCost: .zero,
             tokensByKey: .init(),
             elementsByToken: .init(),
             policy: .init()
@@ -52,13 +70,19 @@ where
     }
 
     fileprivate init(
-        totalCostLimit: Int?,
-        totalCost: Int,
+        totalCostLimit: Cost?,
+        defaultCost: Cost,
+        totalCost: Cost,
         tokensByKey: [Key: Token],
-        elementsByToken: [Token: Element],
+        elementsByToken: [Token: ElementContainer],
         policy: Policy
     ) {
+        if let totalCostLimit = totalCostLimit {
+            assert(totalCostLimit >= 0)
+        }
+
         self.totalCostLimit = totalCostLimit
+        self.defaultCost = defaultCost
         self.totalCost = totalCost
         self.tokensByKey = tokensByKey
         self.elementsByToken = elementsByToken
@@ -72,11 +96,13 @@ where
             return nil
         }
 
-        let element = self.element(forToken: token)
+        guard let container = self.elementsByToken[token] else {
+            return nil
+        }
 
         self.policy.use(token)
 
-        return element.value
+        return container.element.value
     }
 
     public func peekValue(
@@ -86,84 +112,86 @@ where
             return nil
         }
 
-        let element = self.element(forToken: token)
+        guard let container = self.elementsByToken[token] else {
+            return nil
+        }
 
-        return element.value
+        return container.element.value
     }
 
     public mutating func setValue(
         _ value: Value?,
         forKey key: Key,
-        cost: Int = 1
+        cost: Cost? = nil
     ) {
         guard let value = value else {
             self.removeValue(forKey: key)
             return
         }
 
-        self.updateValue(value, forKey: key)
+        self.updateValue(value, forKey: key, cost: cost)
     }
 
     @discardableResult
     public mutating func updateValue(
         _ value: Value,
         forKey key: Key,
-        cost: Int = 1
+        cost: Cost? = nil
     ) -> Value? {
-        // If value present by that key, update it:
+        let oldValue = self.removeValue(forKey: key)
 
-        let updatedValue = self.updateValueIfPresent(
-            value,
-            forKey: key
-        )
+        let cost = cost ?? self.defaultCost
 
-        if updatedValue != nil {
-            return updatedValue
-        }
+        // Evict excessive elements, if necessary:
 
-        // No value present by that key, so:
-
-        // 1. Evict excessive elements, if necessary:
-
-        if let totalCostLimit = self.totalCostLimit, self.totalCost >= totalCostLimit {
+        if let totalCostLimit = self.totalCostLimit {
             // Remove one more, to make space for new element:
-            self.removeLeastRecentlyUsed(
-                Swift.max(0, self.count - (totalCostLimit - 1))
+
+            self.removeWhile(
+                totalCostAbove: totalCostLimit - cost
             )
         }
 
-        // 2. Add the new value:
+        let token = self.policy.insert()
 
-        self.addValueIfNotPresent(
-            value,
-            forKey: key
+        self.tokensByKey[key] = token
+
+        self.elementsByToken[token] = .init(
+            cost: cost,
+            element: (key: key, value: value)
         )
 
-        return nil
+        self.totalCost += cost
+
+        return oldValue
     }
 
     @discardableResult
     public mutating func removeValue(
         forKey key: Key
     ) -> Value? {
-        guard let token = self.tokensByKey.removeValue(
-            forKey: key
-        ) else {
+        guard let token = self.tokensByKey.removeValue(forKey: key) else {
             return nil
         }
 
-        let element = self.elementsByToken.removeValue(
-            forKey: token)!
-
-        self.policy.remove(token)
+        guard let element = self.removeValue(forToken: token) else {
+            return nil
+        }
 
         return element.value
     }
 
-    private func element(forToken token: Token) -> Element {
-        let element = self.elementsByToken[token]!
+    @discardableResult
+    public mutating func remove() -> Element? {
+        guard !self.isEmpty else {
+            return nil
+        }
 
-        return element
+        guard let token = self.policy.remove() else {
+            return nil
+        }
+
+        return self.removeValue(forToken: token)
     }
 
     public mutating func removeAll() {
@@ -179,72 +207,30 @@ where
     }
 
     @discardableResult
-    private mutating func updateValueIfPresent(
-        _ value: Value,
-        forKey key: Key
-    ) -> Value? {
-        guard let token = self.tokensByKey[key] else {
-            return nil
-        }
-
-        self.policy.use(token)
-
-        let oldValue: Value? = self.elementsByToken.modifyValue(
+    private mutating func removeValue(
+        forToken token: Token
+    ) -> Element? {
+        guard let container = self.elementsByToken.removeValue(
             forKey: token
-        ) { element in
-            defer {
-                element?.value = value
-            }
-
-            return element?.value
-        }
-
-        return oldValue
-    }
-
-    private mutating func addValueIfNotPresent(
-        _ value: Value,
-        forKey key: Key
-    ) {
-        guard self.tokensByKey[key] == nil else {
-            return
-        }
-
-        let token = self.policy.insert()
-
-        self.tokensByKey[key] = token
-
-        let element = (key: key, value: value)
-        self.elementsByToken[token] = element
-    }
-
-    private mutating func removeLeastRecentlyUsed(_ k: Int) {
-        for _ in 0..<k {
-            self.removeLeastRecentlyUsed()
-        }
-    }
-
-    @discardableResult
-    private mutating func removeLeastRecentlyUsed() -> Element? {
-        guard !self.isEmpty else {
+        ) else {
             return nil
         }
 
-        let token = self.policy.remove()!
+        let element = container.element
 
-        let element = self.elementsByToken.removeValue(forKey: token)!
+        self.policy.remove(token)
 
         self.tokensByKey.removeValue(forKey: element.key)
+
+        self.totalCost -= container.cost
 
         return element
     }
 
-    private static func totalCostLimitFor(
-        totalCostLimit: Int
-    ) -> Int {
-        assert(totalCostLimit >= 0)
-
-        return totalCostLimit
+    private mutating func removeWhile(totalCostAbove totalCostLimit: Cost) {
+        while (self.count > 0) && (self.totalCost > totalCostLimit) {
+            let _ = self.remove()
+        }
     }
 }
 
@@ -262,8 +248,8 @@ where
                 return false
             }
 
-            let lhsElement = lhs.elementsByToken[lhsToken]!
-            let rhsElement = rhs.elementsByToken[rhsToken]!
+            let lhsElement = lhs.elementsByToken[lhsToken]!.element
+            let rhsElement = rhs.elementsByToken[rhsToken]!.element
 
             guard lhsElement.key == rhsElement.key else {
                 return false
@@ -284,7 +270,11 @@ where
     public func hash(into hasher: inout Hasher) {
         var commutativeHash = 0
         for token in self.tokensByKey.values {
-            let (key, value) = self.elementsByToken[token]!
+            guard let container = self.elementsByToken[token] else {
+                continue
+            }
+
+            let (key, value) = container.element
 
             var elementHasher = hasher
             key.hash(into: &elementHasher)
@@ -311,6 +301,73 @@ extension Cache: Sequence {
     public typealias Iterator = AnyIterator<Element>
 
     public func makeIterator() -> Iterator {
-        .init(self.elementsByToken.values.makeIterator())
+        let elements = self.elementsByToken.values.lazy.map { container in
+            container.element
+        }
+        return .init(elements.makeIterator())
+    }
+}
+
+extension Cache
+where
+    Cost == Int
+{
+    public static var defaultCost: Cost {
+        1
+    }
+
+    public init(totalCostLimit: Cost? = nil) {
+        self.init(
+            totalCostLimit: totalCostLimit,
+            defaultCost: Self.defaultCost
+        )
+    }
+}
+
+extension Cache
+where
+    Cost == UInt
+{
+    public static var defaultCost: Cost {
+        1
+    }
+
+    public init(totalCostLimit: Cost? = nil) {
+        self.init(
+            totalCostLimit: totalCostLimit,
+            defaultCost: Self.defaultCost
+        )
+    }
+}
+
+extension Cache
+where
+    Cost == Float
+{
+    public static var defaultCost: Cost {
+        1.0
+    }
+
+    public init(totalCostLimit: Cost? = nil) {
+        self.init(
+            totalCostLimit: totalCostLimit,
+            defaultCost: Self.defaultCost
+        )
+    }
+}
+
+extension Cache
+where
+    Cost == Double
+{
+    public static var defaultCost: Cost {
+        1.0
+    }
+
+    public init(totalCostLimit: Cost? = nil) {
+        self.init(
+            totalCostLimit: totalCostLimit,
+            defaultCost: Self.defaultCost
+        )
     }
 }
