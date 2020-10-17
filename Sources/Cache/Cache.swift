@@ -56,16 +56,34 @@ where
     fileprivate private(set) var policy: Policy
 
     public init(
+        minimumCapacity: Int? = nil,
         totalCostLimit: Cost? = nil,
         defaultCost: Cost
     ) {
+
+        let totalCost: Cost = .zero
+
+        let tokensByKey: [Key: Token]
+        let elementsByToken: [Token: ElementContainer]
+        let policy: Policy
+
+        if let minimumCapacity = minimumCapacity {
+            tokensByKey = .init(minimumCapacity: minimumCapacity)
+            elementsByToken = .init(minimumCapacity: minimumCapacity)
+            policy = .init(minimumCapacity: minimumCapacity)
+        } else {
+            tokensByKey = .init()
+            elementsByToken = .init()
+            policy = .init()
+        }
+
         self.init(
             totalCostLimit: totalCostLimit,
             defaultCost: defaultCost,
-            totalCost: .zero,
-            tokensByKey: .init(),
-            elementsByToken: .init(),
-            policy: .init()
+            totalCost: totalCost,
+            tokensByKey: tokensByKey,
+            elementsByToken: elementsByToken,
+            policy: policy
         )
     }
 
@@ -316,8 +334,12 @@ where
         1
     }
 
-    public init(totalCostLimit: Cost? = nil) {
+    public init(
+        minimumCapacity: Int? = nil,
+        totalCostLimit: Cost? = nil
+    ) {
         self.init(
+            minimumCapacity: minimumCapacity,
             totalCostLimit: totalCostLimit,
             defaultCost: Self.defaultCost
         )
@@ -332,8 +354,12 @@ where
         1
     }
 
-    public init(totalCostLimit: Cost? = nil) {
+    public init(
+        minimumCapacity: Int? = nil,
+        totalCostLimit: Cost? = nil
+    ) {
         self.init(
+            minimumCapacity: minimumCapacity,
             totalCostLimit: totalCostLimit,
             defaultCost: Self.defaultCost
         )
@@ -348,8 +374,12 @@ where
         1.0
     }
 
-    public init(totalCostLimit: Cost? = nil) {
+    public init(
+        minimumCapacity: Int? = nil,
+        totalCostLimit: Cost? = nil
+    ) {
         self.init(
+            minimumCapacity: minimumCapacity,
             totalCostLimit: totalCostLimit,
             defaultCost: Self.defaultCost
         )
@@ -364,8 +394,12 @@ where
         1.0
     }
 
-    public init(totalCostLimit: Cost? = nil) {
+    public init(
+        minimumCapacity: Int? = nil,
+        totalCostLimit: Cost? = nil
+    ) {
         self.init(
+            minimumCapacity: minimumCapacity,
             totalCostLimit: totalCostLimit,
             defaultCost: Self.defaultCost
         )
