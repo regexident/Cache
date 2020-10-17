@@ -18,7 +18,7 @@ final class LRUCacheTests: XCTestCase {
     func testInitCapacity() throws {
         let capacity = 3
 
-        var cache = Cache(maximumCount: capacity)
+        var cache = Cache(totalCostLimit: capacity)
 
         let elements: [Element] = [
             (0, "0"),
@@ -105,14 +105,14 @@ final class LRUCacheTests: XCTestCase {
             cache.setValue(value, forKey: key)
         }
 
-        let maximumCount = 3
+        let totalCostLimit = 3
 
-        cache.resizeTo(maximumCount: maximumCount)
+        cache.resizeTo(totalCostLimit: totalCostLimit)
 
-        XCTAssertEqual(cache.maximumCount, maximumCount)
-        XCTAssertEqual(cache.count, maximumCount)
+        XCTAssertEqual(cache.totalCostLimit, totalCostLimit)
+        XCTAssertEqual(cache.count, totalCostLimit)
 
-        let expectedElements = elements.suffix(maximumCount).reversed()
+        let expectedElements = elements.suffix(totalCostLimit).reversed()
 
         for (element, cachedElement) in zip(expectedElements, cache) {
             XCTAssertEqual(element.key, cachedElement.key)
@@ -228,7 +228,7 @@ final class LRUCacheTests: XCTestCase {
             4: "4"
         ]
 
-        cache.resizeTo(maximumCount: 5)
+        cache.resizeTo(totalCostLimit: 5)
 
         // Access an existing element:
         let _ = cache.value(forKey: 1)
@@ -237,7 +237,7 @@ final class LRUCacheTests: XCTestCase {
         // Add a new non-existing element:
         let _ = cache.setValue("5", forKey: 5)
 
-        cache.resizeTo(maximumCount: 4)
+        cache.resizeTo(totalCostLimit: 4)
 
         XCTAssertEqual(
             cache,

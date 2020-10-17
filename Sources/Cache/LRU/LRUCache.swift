@@ -4,7 +4,7 @@
 
 import Foundation
 
-public struct LRUCache<Key, Value>: CacheProtocol, EvictableCacheProtocol
+public struct LRUCache<Key, Value>
 where
     Key: Hashable
 {
@@ -27,12 +27,12 @@ where
         self.dictionary.capacity
     }
 
-    public private(set) var maximumCount: Int {
+    public private(set) var totalCostLimit: Int {
         didSet {
-            assert(self.maximumCount >= 0)
+            assert(self.totalCostLimit >= 0)
 
             self.removeLeastRecentlyUsed(
-                Swift.max(0, self.count - self.maximumCount)
+                Swift.max(0, self.count - self.totalCostLimit)
             )
         }
     }
@@ -41,15 +41,15 @@ where
     fileprivate private(set) var queue: Queue
 
     public init(
-        maximumCount: Int
+        totalCostLimit: Int
     ) {
-        assert(maximumCount >= 0)
+        assert(totalCostLimit >= 0)
 
-        let maximumCount = Self.maximumCountFor(
-            maximumCount: maximumCount
+        let totalCostLimit = Self.totalCostLimitFor(
+            totalCostLimit: totalCostLimit
         )
 
-        self.maximumCount = maximumCount
+        self.totalCostLimit = totalCostLimit
         self.dictionary = .init()
         self.queue = .init()
     }
@@ -64,32 +64,32 @@ where
         S.Element == (Key, Value)
     {
         self.init(
-            maximumCount: .max,
+            totalCostLimit: .max,
             uniqueKeysWithValues: keysAndValues
         )
     }
 
     public init<S>(
-        maximumCount: Int,
+        totalCostLimit: Int,
         uniqueKeysWithValues keysAndValues: S
     )
     where
         S: Sequence,
         S.Element == (Key, Value)
     {
-        self.init(maximumCount: maximumCount)
+        self.init(totalCostLimit: totalCostLimit)
         for (key, value) in keysAndValues {
             self.setValue(value, forKey: key)
         }
     }
 
     public mutating func resizeTo(
-        maximumCount: Int
+        totalCostLimit: Int
     ) {
-        let maximumCount = Self.maximumCountFor(
-            maximumCount: maximumCount
+        let totalCostLimit = Self.totalCostLimitFor(
+            totalCostLimit: totalCostLimit
         )
-        self.maximumCount = maximumCount
+        self.totalCostLimit = totalCostLimit
     }
 
     public mutating func value(
@@ -144,10 +144,10 @@ where
 
         // 1. Evict excessive elements, if necessary:
 
-        if self.count >= self.maximumCount {
+        if self.count >= self.totalCostLimit {
             // Remove one more, to make space for new element:
             self.removeLeastRecentlyUsed(
-                Swift.max(0, self.count - (self.maximumCount - 1))
+                Swift.max(0, self.count - (self.totalCostLimit - 1))
             )
         }
 
@@ -264,12 +264,12 @@ where
         return node
     }
 
-    private static func maximumCountFor(
-        maximumCount: Int
+    private static func totalCostLimitFor(
+        totalCostLimit: Int
     ) -> Int {
-        assert(maximumCount >= 0)
+        assert(totalCostLimit >= 0)
 
-        return maximumCount
+        return totalCostLimit
     }
 
     // Since `Queue` has reference semantics we need to guard
@@ -346,7 +346,7 @@ extension LRUCache: CustomStringConvertible {
         let elements = self.queue.lazy.map { key, value in
             return "\(key): \(value)"
         }.joined(separator: ", ")
-        return "\(typeName)(maximumCount: \(self.maximumCount), elements: [\(elements)])"
+        return "\(typeName)(totalCostLimit: \(self.totalCostLimit), elements: [\(elements)])"
     }
 }
 

@@ -4,10 +4,10 @@
 
 import Foundation
 
-public struct Cache<Key, Value, Policy>: CacheProtocol, EvictableCacheProtocol
+public struct Cache<Key, Value, Policy>
 where
     Key: Hashable,
-    Policy: CachePolicyProtocol
+    Policy: CachePolicy
 {
     public typealias Element = (key: Key, value: Value)
 
@@ -27,71 +27,42 @@ where
         self.tokensByKey.capacity
     }
 
-    public private(set) var maximumCount: Int {
-        didSet {
-            assert(self.maximumCount >= 0)
-
-            self.removeLeastRecentlyUsed(
-                Swift.max(0, self.count - self.maximumCount)
-            )
-        }
-    }
-
+    fileprivate private(set) var totalCostLimit: Int?
+    fileprivate private(set) var totalCost: Int
     fileprivate private(set) var tokensByKey: [Key: Token]
     fileprivate private(set) var elementsByToken: [Token: Element]
     fileprivate private(set) var policy: Policy
 
-    public init(
-        maximumCount: Int
+    fileprivate init(
+        totalCostLimit: Int
     ) {
-        assert(maximumCount >= 0)
+        assert(totalCostLimit >= 0)
 
-        let maximumCount = Self.maximumCountFor(
-            maximumCount: maximumCount
+        let totalCostLimit = Self.totalCostLimitFor(
+            totalCostLimit: totalCostLimit
         )
 
-        self.maximumCount = maximumCount
-        self.tokensByKey = [:]
-        self.elementsByToken = [:]
-        self.policy = .init(maximumCount: maximumCount)
-    }
-
-    @inlinable
-    @inline(__always)
-    public init<S>(
-        uniqueKeysWithValues keysAndValues: S
-    )
-    where
-        S: Sequence,
-        S.Element == (Key, Value)
-    {
         self.init(
-            maximumCount: .max,
-            uniqueKeysWithValues: keysAndValues
+            totalCostLimit: totalCostLimit,
+            totalCost: .init(),
+            tokensByKey: .init(),
+            elementsByToken: .init(),
+            policy: .init()
         )
     }
 
-    public init<S>(
-        maximumCount: Int,
-        uniqueKeysWithValues keysAndValues: S
-    )
-    where
-        S: Sequence,
-        S.Element == (Key, Value)
-    {
-        self.init(maximumCount: maximumCount)
-        for (key, value) in keysAndValues {
-            self.setValue(value, forKey: key)
-        }
-    }
-
-    public mutating func resizeTo(
-        maximumCount: Int
+    fileprivate init(
+        totalCostLimit: Int?,
+        totalCost: Int,
+        tokensByKey: [Key: Token],
+        elementsByToken: [Token: Element],
+        policy: Policy
     ) {
-        let maximumCount = Self.maximumCountFor(
-            maximumCount: maximumCount
-        )
-        self.maximumCount = maximumCount
+        self.totalCostLimit = totalCostLimit
+        self.totalCost = totalCost
+        self.tokensByKey = tokensByKey
+        self.elementsByToken = elementsByToken
+        self.policy = policy
     }
 
     public mutating func value(
@@ -122,7 +93,8 @@ where
 
     public mutating func setValue(
         _ value: Value?,
-        forKey key: Key
+        forKey key: Key,
+        cost: Int = 1
     ) {
         guard let value = value else {
             self.removeValue(forKey: key)
@@ -135,7 +107,8 @@ where
     @discardableResult
     public mutating func updateValue(
         _ value: Value,
-        forKey key: Key
+        forKey key: Key,
+        cost: Int = 1
     ) -> Value? {
         // If value present by that key, update it:
 
@@ -152,10 +125,10 @@ where
 
         // 1. Evict excessive elements, if necessary:
 
-        if self.count >= self.maximumCount {
+        if let totalCostLimit = self.totalCostLimit, self.totalCost >= totalCostLimit {
             // Remove one more, to make space for new element:
             self.removeLeastRecentlyUsed(
-                Swift.max(0, self.count - (self.maximumCount - 1))
+                Swift.max(0, self.count - (totalCostLimit - 1))
             )
         }
 
@@ -257,7 +230,7 @@ where
             return nil
         }
 
-        let token = self.policy.removeLeastRecentlyUsed()!
+        let token = self.policy.remove()!
 
         let element = self.elementsByToken.removeValue(forKey: token)!
 
@@ -266,12 +239,12 @@ where
         return element
     }
 
-    private static func maximumCountFor(
-        maximumCount: Int
+    private static func totalCostLimitFor(
+        totalCostLimit: Int
     ) -> Int {
-        assert(maximumCount >= 0)
+        assert(totalCostLimit >= 0)
 
-        return maximumCount
+        return totalCostLimit
     }
 }
 
@@ -323,21 +296,14 @@ where
     }
 }
 
-extension Cache: ExpressibleByDictionaryLiteral {
-    @inlinable
-    @inline(__always)
-    public init(dictionaryLiteral elements: (Key, Value)...) {
-        self.init(uniqueKeysWithValues: elements)
-    }
-}
-
 extension Cache: CustomStringConvertible {
     public var description: String {
         let typeName = String(describing: type(of: self))
+        let totalCostLimit = self.totalCostLimit.map { "\($0)" } ?? "nil"
         let elements = self.lazy.map { key, value in
             return "\(key): \(value)"
         }.joined(separator: ", ")
-        return "\(typeName)(maximumCount: \(self.maximumCount), elements: [\(elements)])"
+        return "\(typeName)(totalCostLimit: \(totalCostLimit), elements: [\(elements)])"
     }
 }
 
