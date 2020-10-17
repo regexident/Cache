@@ -8,6 +8,7 @@ public protocol CachePolicy {
     associatedtype Token: Hashable
 
     init()
+    init(minimumCapacity: Int)
 
     mutating func insert() -> Token
 
