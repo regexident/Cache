@@ -4,13 +4,13 @@
 
 import Foundation
 
-public typealias CostValue = Comparable & AdditiveArithmetic & Numeric
+public typealias CacheCost = Comparable & AdditiveArithmetic & Numeric
 
 public struct Cache<Key, Value, Cost, Policy>
 where
     Key: Hashable,
     Policy: CachePolicy,
-    Cost: CostValue
+    Cost: CacheCost
 {
     public typealias Element = (key: Key, value: Value)
 
