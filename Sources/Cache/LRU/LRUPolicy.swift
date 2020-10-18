@@ -11,7 +11,7 @@ where
 public struct LRUToken {
     internal let index: LRUPolicy.Index
 
-    internal init(_ index: LRUPolicy.Index) {
+    internal init(index: LRUPolicy.Index) {
         self.index = index
     }
 }
@@ -118,7 +118,7 @@ public struct LRUPolicy: CachePolicy {
         self.head = index
         self.firstFree = free
 
-        return .init(index)
+        return .init(index: index)
     }
 
     public mutating func use(_ token: Token) -> Token {
@@ -135,7 +135,7 @@ public struct LRUPolicy: CachePolicy {
         guard let index = self.tail else {
             return nil
         }
-        return .init(index)
+        return .init(index: index)
     }
 
     public mutating func remove(_ token: Token) {
