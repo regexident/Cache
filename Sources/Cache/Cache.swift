@@ -55,12 +55,29 @@ where
     fileprivate private(set) var elementsByToken: [Token: ElementContainer]
     fileprivate private(set) var policy: Policy
 
+    /// Creates an empty cache with preallocated space
+    /// for at least the specified number of values.
+    ///
+    /// - Note:
+    ///   For performance reasons, the size of the newly allocated
+    ///   storage might be greater than the requested capacity.
+    ///   Use the policy's `capacity` property to determine the size
+    ///   of the new storage.
+    ///
+    /// - Parameters:
+    ///   - minimumCapacity:
+    ///     The requested number of elements to store.
+    ///   - totalCostLimit:
+    ///     The maximum total cost that the cache can
+    ///     hold before it starts evicting objects.
+    ///   - defaultCost:
+    ///     The default cost associated with all stored value,
+    ///     for which no individual cost was specified.
     public init(
         minimumCapacity: Int? = nil,
         totalCostLimit: Cost? = nil,
         defaultCost: Cost
     ) {
-
         let minimumCapacity = minimumCapacity ?? 0
 
         self.init(

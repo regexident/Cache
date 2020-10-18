@@ -13,6 +13,12 @@ public protocol CachePolicy {
 
     /// Creates an empty policy with preallocated space
     /// for at least the specified number of tokens.
+    ///
+    /// - Note:
+    ///   For performance reasons, the size of the newly allocated
+    ///   storage might be greater than the requested capacity.
+    ///   Use the policy's `capacity` property to determine the size
+    ///   of the new storage.
     init(minimumCapacity: Int)
 
     /// Inserts a new token into the policy.

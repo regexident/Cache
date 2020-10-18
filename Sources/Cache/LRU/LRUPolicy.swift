@@ -59,10 +59,23 @@ public struct LRUPolicy: CachePolicy {
     internal private(set) var nodes: [Node]
     internal private(set) var firstFree: Index?
 
+    /// Creates an empty cache policy with no preallocated space.
     public init() {
         self.init(minimumCapacity: 0)
     }
 
+    /// Creates an empty cache policy with preallocated space
+    /// for at least the specified number of elements.
+    ///
+    /// - Note:
+    ///   For performance reasons, the size of the newly allocated
+    ///   storage might be greater than the requested capacity.
+    ///   Use the policy's `capacity` property to determine the size
+    ///   of the new storage.
+    ///
+    /// - Parameters:
+    ///   - minimumCapacity:
+    ///     The requested number of elements to store.
     public init(minimumCapacity: Int) {
         assert(minimumCapacity >= 0)
 
