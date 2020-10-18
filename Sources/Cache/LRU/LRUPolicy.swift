@@ -9,9 +9,9 @@ where
     Key: Hashable
 
 public struct LRUToken {
-    fileprivate let index: LRUQueue.Index
+    internal let index: LRUPolicy.Index
 
-    fileprivate init(_ index: LRUQueue.Index) {
+    internal init(_ index: LRUPolicy.Index) {
         self.index = index
     }
 }
@@ -34,31 +34,105 @@ extension LRUToken: Hashable {
 public struct LRUPolicy: CachePolicy {
     public typealias Token = LRUToken
 
-    private typealias Node = LRUQueue.Node
-    private typealias queue = LRUQueue
+    internal typealias Index = Int
 
-    private var queue: queue
+    internal enum Node: Equatable {
+        internal struct Free: Equatable {
+            var nextFree: Int?
+        }
+
+        internal struct Occupied: Equatable {
+            var previous: Index?
+            var next: Index?
+        }
+
+        case free(Free)
+        case occupied(Occupied)
+    }
+
+    internal private(set) var head: Index?
+    internal private(set) var tail: Index?
+    internal private(set) var nodes: [Node]
+    internal private(set) var firstFree: Index?
 
     public init() {
         self.init(minimumCapacity: 0)
     }
 
     public init(minimumCapacity: Int) {
-        self.queue = .init(minimumCapacity: minimumCapacity)
+        assert(minimumCapacity >= 0)
+
+        self.init(
+            head: nil,
+            tail: nil,
+            nodes: (0..<minimumCapacity).map { index in
+                let nextIndex = index + 1
+                let nextFree = (nextIndex < minimumCapacity) ? nextIndex : nil
+                return .free(.init(nextFree: nextFree))
+            },
+            free: (minimumCapacity > 0) ? 0 : nil
+        )
+    }
+
+    internal init(
+        head: Index?,
+        tail: Index?,
+        nodes: [Node],
+        free: Index?
+    ) {
+        self.head = head
+        self.tail = tail
+        self.nodes = nodes
+        self.firstFree = free
     }
 
     public mutating func insert() -> Token {
-        let index = self.queue.enqueue()
+        if self.firstFree == nil {
+            self.firstFree = self.nodes.count
+            self.nodes.append(.free(.init(nextFree: nil)))
+        }
+
+        let index = self.firstFree!
+        let currentHead = self.head
+
+        let free: Index? = self.modifyNode(at: index) { node in
+            guard case .free(let free) = node else {
+                fatalError("Expected free slot, found occupied.")
+            }
+
+            node = .occupied(.init(
+                previous: nil,
+                next: currentHead
+            ))
+
+            return free.nextFree
+        }
+
+        if let head = currentHead {
+            self.modifyOccupiedNode(at: head) { occupied in
+                occupied.previous = index
+            }
+        } else {
+            self.tail = index
+        }
+        self.head = index
+        self.firstFree = free
+
         return .init(index)
     }
 
-    public mutating func use(_ token: Token) {
-        let index = token.index
-        self.queue.requeue(index)
+    public mutating func use(_ token: Token) -> Token {
+        guard self.head != token.index else {
+            return token
+        }
+
+        self.remove(token)
+
+        return self.insert()
     }
 
     public mutating func next() -> Token? {
-        guard let index = self.queue.next() else {
+        guard let index = self.tail else {
             return nil
         }
         return .init(index)
@@ -66,7 +140,44 @@ public struct LRUPolicy: CachePolicy {
 
     public mutating func remove(_ token: Token) {
         let index = token.index
-        self.queue.dequeue(index)
+
+        let nodeOrNil: Node.Occupied? = self.modifyNode(at: index) { node in
+            switch node {
+            case .free(_):
+                return nil
+            case .occupied(let occupied):
+                node = .occupied(.init())
+                return occupied
+            }
+        }
+
+        guard let node = nodeOrNil else {
+            return
+        }
+
+        if self.head == index {
+            self.head = node.next
+        }
+
+        if self.tail == index {
+            self.tail = node.previous
+        }
+
+        if let previousIndex = node.previous {
+            self.modifyOccupiedNode(at: previousIndex) { occupied in
+                assert(occupied.next == index)
+                occupied.next = node.next
+            }
+        }
+        if let nextIndex = node.next {
+            self.modifyOccupiedNode(at: nextIndex) { occupied in
+                assert(occupied.previous == index)
+                occupied.previous = node.previous
+            }
+        }
+
+        self.nodes[index] = .free(.init(nextFree: self.firstFree))
+        self.firstFree = index
     }
 
     @inlinable
@@ -78,8 +189,36 @@ public struct LRUPolicy: CachePolicy {
     public mutating func removeAll(
         keepingCapacity keepCapacity: Bool
     ) {
-        self.queue.dequeueAll(
-            keepingCapacity: keepCapacity
-        )
+        self.head = nil
+        self.tail = nil
+
+        self.nodes.removeAll(keepingCapacity: keepCapacity)
+        self.firstFree = nil
+    }
+
+    private mutating func modifyOccupiedNode<T>(
+        at index: Index,
+        _ closure: (inout Node.Occupied) -> T
+    ) -> T {
+        self.modifyNode(at: index) { node in
+            guard case .occupied(var occupied) = node else {
+                fatalError("Expected occupied slot, found free.")
+            }
+
+            defer {
+                node = .occupied(occupied)
+            }
+
+            return closure(&occupied)
+        }
+    }
+
+    private mutating func modifyNode<T>(
+        at index: Index,
+        _ closure: (inout Node) -> T
+    ) -> T {
+        self.nodes.modifyElement(at: index) { node in
+            return closure(&node)
+        }
     }
 }
