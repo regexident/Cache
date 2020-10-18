@@ -104,7 +104,15 @@ where
             return nil
         }
 
-        self.policy.use(token)
+        let newToken = self.policy.use(token)
+
+        if newToken != token {
+            self.tokensByKey[key] = newToken
+            let container = self.elementsByToken.removeValue(
+                forKey: token
+            )
+            self.elementsByToken[newToken] = container
+        }
 
         return container.element.value
     }
