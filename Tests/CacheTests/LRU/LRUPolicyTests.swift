@@ -19,6 +19,13 @@ final class LRUPolicyTests: XCTestCase {
         return policy
     }
 
+    func testToken() throws {
+        let index: Index = 42
+        let token = Token(index: index)
+
+        XCTAssertEqual(token.index, index)
+    }
+
     func testInit() throws {
         let policy = self.policy()
 
@@ -65,7 +72,7 @@ final class LRUPolicyTests: XCTestCase {
         ])
         XCTAssertEqual(policy.firstFree, nil)
 
-        let tokenBefore = Token(2)
+        let tokenBefore = Token(index: 2)
         let tokenAfter = policy.use(tokenBefore)
 
         XCTAssertEqual(tokenAfter, tokenBefore)
@@ -105,7 +112,7 @@ final class LRUPolicyTests: XCTestCase {
         XCTAssertEqual(policy.firstFree, nil)
 
         // depolicy head:
-        policy.remove(.init(4))
+        policy.remove(.init(index: 4))
 
         XCTAssertEqual(policy.head, 3)
         XCTAssertEqual(policy.tail, 0)
@@ -119,7 +126,7 @@ final class LRUPolicyTests: XCTestCase {
         XCTAssertEqual(policy.firstFree, 4)
 
         // depolicy middle:
-        policy.remove(.init(2))
+        policy.remove(.init(index: 2))
 
         XCTAssertEqual(policy.head, 3)
         XCTAssertEqual(policy.tail, 0)
@@ -133,7 +140,7 @@ final class LRUPolicyTests: XCTestCase {
         XCTAssertEqual(policy.firstFree, 2)
 
         // depolicy tail:
-        policy.remove(.init(0))
+        policy.remove(.init(index: 0))
 
         XCTAssertEqual(policy.head, 3)
         XCTAssertEqual(policy.tail, 1)
@@ -193,13 +200,13 @@ final class LRUPolicyTests: XCTestCase {
         XCTAssertEqual(policy.nodes.capacity, capacity)
     }
 
-//    static var allTests = [
-//        ("testInit", testInit),
-//        ("testEnpolicy", testEnpolicy),
-//        ("testNext", testNext),
-//        ("testDepolicy", testDepolicy),
-//        ("testDepolicyAll", testDepolicyAll),
-//        ("testDepolicyAllKeepingCapacity", testDepolicyAllKeepingCapacity),
-//        ("testRepolicy", testRepolicy),
-//    ]
+    static var allTests = [
+        ("testInit", testInit),
+        ("testInsert", testInsert),
+        ("testUse", testUse),
+        ("testNext", testNext),
+        ("testRemove", testRemove),
+        ("testRemoveAll", testRemoveAll),
+        ("testRemoveAllKeepingCapacity", testRemoveAllKeepingCapacity),
+    ]
 }
