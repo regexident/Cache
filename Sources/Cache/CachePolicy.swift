@@ -19,7 +19,7 @@ public protocol CachePolicy {
     mutating func insert() -> Token
 
     /// Marks a token as used.
-    mutating func use(_ token: Token)
+    mutating func use(_ token: Token) -> Token
 
     /// Returns the best token to be removed next
     mutating func next() -> Token?
