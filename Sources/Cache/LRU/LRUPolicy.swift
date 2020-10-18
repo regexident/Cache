@@ -50,6 +50,10 @@ public struct LRUPolicy: CachePolicy {
         case occupied(Occupied)
     }
 
+    public var capacity: Int {
+        self.nodes.capacity
+    }
+
     internal private(set) var head: Index?
     internal private(set) var tail: Index?
     internal private(set) var nodes: [Node]
@@ -62,15 +66,25 @@ public struct LRUPolicy: CachePolicy {
     public init(minimumCapacity: Int) {
         assert(minimumCapacity >= 0)
 
+        // Next smallest greater than or equal power of 2:
+        let capacity: Int
+
+        if minimumCapacity > 0 {
+            let leadingZeros = minimumCapacity.leadingZeroBitCount
+            capacity = 0b1 << (Int.bitWidth - leadingZeros)
+        } else {
+            capacity = 0
+        }
+
         self.init(
             head: nil,
             tail: nil,
-            nodes: (0..<minimumCapacity).map { index in
+            nodes: (0..<capacity).map { index in
                 let nextIndex = index + 1
-                let nextFree = (nextIndex < minimumCapacity) ? nextIndex : nil
+                let nextFree = (nextIndex < capacity) ? nextIndex : nil
                 return .free(.init(nextFree: nextFree))
             },
-            free: (minimumCapacity > 0) ? 0 : nil
+            free: (capacity > 0) ? 0 : nil
         )
     }
 
