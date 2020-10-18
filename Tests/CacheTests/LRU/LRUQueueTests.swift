@@ -2,208 +2,220 @@ import XCTest
 
 @testable import Cache
 
+extension LRUQueue {
+    fileprivate var headNode: LRUQueue.Node? {
+        guard let index = self.head else {
+            return nil
+        }
+        return self.nodes[index]
+    }
+
+    fileprivate var tailNode: LRUQueue.Node? {
+        guard let index = self.tail else {
+            return nil
+        }
+        return self.node(at: index)
+    }
+
+    fileprivate func node(at index: LRUQueue.Index) -> LRUQueue.Node {
+        return self.nodes[index]
+    }
+}
+
 final class LRUQueueTests: XCTestCase {
     typealias Queue = LRUQueue
-    typealias Node = Queue.Node
+    typealias Index = Queue.Index
+
+    func queue(
+        count: Int = 0
+    ) -> Queue {
+        var queue = Queue()
+
+        for _ in 0..<count {
+            let _ = queue.enqueue()
+        }
+
+        return queue
+    }
 
     func testInit() throws {
-        let queue = Queue()
+        let queue = self.queue()
 
         XCTAssertNil(queue.head)
         XCTAssertNil(queue.tail)
+        XCTAssertEqual(queue.nodes, [])
+        XCTAssertNil(queue.free)
     }
 
     func testEnqueue() throws {
-        let queue = Queue()
+        var queue = self.queue()
 
         let head = queue.enqueue()
 
         XCTAssertEqual(queue.head, head)
         XCTAssertEqual(queue.tail, head)
+        XCTAssertEqual(queue.nodes, [
+            .occupied(.init(previous: nil, next: nil)),
+        ])
+        XCTAssertNil(queue.free)
 
         let newHead = queue.enqueue()
 
         XCTAssertEqual(queue.head, newHead)
         XCTAssertEqual(queue.tail, head)
-        XCTAssertEqual(head.previous, newHead)
-        XCTAssertEqual(newHead.next, head)
+        XCTAssertEqual(queue.nodes, [
+            .occupied(.init(previous: 1, next: nil)),
+            .occupied(.init(previous: nil, next: 0)),
+        ])
+        XCTAssertNil(queue.free)
     }
 
-    func testEnqueueNode() throws {
-        let queue = Queue()
+    func testNext() throws {
+        var queue = self.queue(count: 3)
 
-        let head = Node()
-        queue.enqueue(head)
-
-        XCTAssertEqual(queue.head, head)
-        XCTAssertEqual(queue.tail, head)
-
-        XCTAssertNil(head.previous)
-        XCTAssertNil(head.next)
-
-        let newHead = Node()
-        queue.enqueue(newHead)
-
-        XCTAssertNil(newHead.previous)
-        XCTAssertEqual(newHead.next, head)
-
-        XCTAssertEqual(queue.head, newHead)
-        XCTAssertEqual(queue.tail, head)
-        XCTAssertEqual(head.previous, newHead)
-        XCTAssertEqual(newHead.next, head)
+        let index = queue.next()
+        XCTAssertEqual(index, queue.tail)
     }
 
-    func testDequeueNode() throws {
-        let queue = Queue()
+    func testDequeue() throws {
+        var queue = self.queue(count: 5)
 
-        let tail = queue.enqueue()
-        let _ = queue.enqueue()
-        let mid = queue.enqueue()
-        let _ = queue.enqueue()
-        let head = queue.enqueue()
+        XCTAssertEqual(queue.head, 4)
+        XCTAssertEqual(queue.tail, 0)
+        XCTAssertEqual(queue.nodes, [
+            .occupied(.init(previous: 1, next: nil)),
+            .occupied(.init(previous: 2, next: 0)),
+            .occupied(.init(previous: 3, next: 1)),
+            .occupied(.init(previous: 4, next: 2)),
+            .occupied(.init(previous: nil, next: 3)),
+        ])
+        XCTAssertEqual(queue.free, nil)
 
-        queue.dequeue(tail)
+        // dequeue head:
+        queue.dequeue(4)
 
-        XCTAssertNil(queue.tail?.next)
+        XCTAssertEqual(queue.head, 3)
+        XCTAssertEqual(queue.tail, 0)
+        XCTAssertEqual(queue.nodes, [
+            .occupied(.init(previous: 1, next: nil)),
+            .occupied(.init(previous: 2, next: 0)),
+            .occupied(.init(previous: 3, next: 1)),
+            .occupied(.init(previous: nil, next: 2)),
+            .free(.init(nextFree: nil)),
+        ])
+        XCTAssertEqual(queue.free, 4)
 
-        XCTAssertNil(tail.previous)
-        XCTAssertNil(tail.next)
+        // dequeue middle:
+        queue.dequeue(2)
 
-        queue.dequeue(head)
+        XCTAssertEqual(queue.head, 3)
+        XCTAssertEqual(queue.tail, 0)
+        XCTAssertEqual(queue.nodes, [
+            .occupied(.init(previous: 1, next: nil)),
+            .occupied(.init(previous: 3, next: 0)),
+            .free(.init(nextFree: 4)),
+            .occupied(.init(previous: nil, next: 1)),
+            .free(.init(nextFree: nil)),
+        ])
+        XCTAssertEqual(queue.free, 2)
 
-        XCTAssertNil(queue.head?.previous)
+        // dequeue tail:
+        queue.dequeue(0)
 
-        XCTAssertNil(head.previous)
-        XCTAssertNil(head.next)
-
-        queue.dequeue(mid)
-
-        XCTAssertEqual(queue.head?.next, queue.tail)
-        XCTAssertEqual(queue.tail?.previous, queue.head)
-
-        XCTAssertNil(mid.previous)
-        XCTAssertNil(mid.next)
+        XCTAssertEqual(queue.head, 3)
+        XCTAssertEqual(queue.tail, 1)
+        XCTAssertEqual(queue.nodes, [
+            .free(.init(nextFree: 2)),
+            .occupied(.init(previous: 3, next: nil)),
+            .free(.init(nextFree: 4)),
+            .occupied(.init(previous: nil, next: 1)),
+            .free(.init(nextFree: nil)),
+        ])
+        XCTAssertEqual(queue.free, 0)
     }
 
-//    func testRemoveFirst() throws {
-//        let queue = Queue([0, 1, 2])
-//
-//        queue.removeFirst()
-//        XCTAssertEqual(Array(queue), [1, 2])
-//
-//        queue.removeFirst()
-//        XCTAssertEqual(Array(queue), [2])
-//
-//        queue.removeFirst()
-//        XCTAssertEqual(Array(queue), [])
-//    }
-//
-//    func testRemoveLast() throws {
-//        let queue = Queue([0, 1, 2])
-//
-//        queue.removeLast()
-//        XCTAssertEqual(Array(queue), [0, 1])
-//
-//        queue.removeLast()
-//        XCTAssertEqual(Array(queue), [0])
-//
-//        queue.removeLast()
-//        XCTAssertEqual(Array(queue), [])
-//    }
-//
-//    func testRemoveAt() throws {
-//        let queue = Queue([0, 1, 2, 3, 4])
-//
-//        let indexOrNil = queue.firstIndex(of: 2)
-//        let index = try XCTUnwrap(indexOrNil)
-//        queue.remove(at: index)
-//
-//        XCTAssertEqual(Array(queue), [0, 1, 3, 4])
-//    }
-//
-//    func testRemoveAllWhere() throws {
-//        let queue = Queue([0, 1, 2, 3, 4])
-//
-//        // Remove none:
-//        queue.removeAll { _ in false }
-//        XCTAssertEqual(Array(queue), [0, 1, 2, 3, 4])
-//
-//        // Remove prefix (i.e. head):
-//        queue.removeAll { $0 == 0 }
-//        XCTAssertEqual(Array(queue), [1, 2, 3, 4])
-//
-//        // Remove suffix (i.e. tail):
-//        queue.removeAll { $0 == 4 }
-//        XCTAssertEqual(Array(queue), [1, 2, 3])
-//
-//        // Remove infix:
-//        queue.removeAll { $0 == 2 }
-//        XCTAssertEqual(Array(queue), [1, 3])
-//
-//        // Remove all:
-//        queue.removeAll { _ in true }
-//        XCTAssertEqual(Array(queue), [])
-//    }
-//
-//    func testRemoveAll() throws {
-//        let queue = Queue([0, 1, 2, 3, 4])
-//
-//        queue.removeAll()
-//        XCTAssertEqual(Array(queue), [])
-//    }
-//
-//    func testDoesNotLeak() throws {
-//        class Dummy {
-//            let closure: () -> ()
-//
-//            init(closure: @escaping () -> ()) {
-//                self.closure = closure
-//            }
-//
-//            deinit {
-//                self.closure()
-//            }
-//        }
-//
-//        let expectation = self.expectation(
-//            description: "Expected element to be deinit'ed"
-//        )
-//
-//        let closure = {
-//            expectation.fulfill()
-//        }
-//
-//        var queue: DoublyLinkedQueue! = [
-//            Dummy(closure: closure),
-//            Dummy(closure: closure),
-//            Dummy(closure: closure),
-//            Dummy(closure: closure),
-//            Dummy(closure: closure),
-//        ]
-//
-//        expectation.expectedFulfillmentCount = queue.count
-//
-//        queue = nil
-//
-//        self.waitForExpectations(timeout: 0.0)
-//    }
+    func testDequeueAll() throws {
+        var queue = self.queue(count: 3)
+
+        XCTAssertEqual(queue.head, 2)
+        XCTAssertEqual(queue.tail, 0)
+        XCTAssertEqual(queue.nodes, [
+            .occupied(.init(previous: 1, next: nil)),
+            .occupied(.init(previous: 2, next: 0)),
+            .occupied(.init(previous: nil, next: 1)),
+        ])
+        XCTAssertEqual(queue.free, nil)
+
+        queue.dequeueAll()
+
+        XCTAssertEqual(queue.head, nil)
+        XCTAssertEqual(queue.tail, nil)
+        XCTAssertEqual(queue.nodes, [])
+        XCTAssertEqual(queue.free, nil)
+
+        XCTAssertEqual(queue.nodes.capacity, 0)
+    }
+
+    func testDequeueAllKeepingCapacity() throws {
+        var queue = self.queue(count: 3)
+
+        XCTAssertEqual(queue.head, 2)
+        XCTAssertEqual(queue.tail, 0)
+        XCTAssertEqual(queue.nodes, [
+            .occupied(.init(previous: 1, next: nil)),
+            .occupied(.init(previous: 2, next: 0)),
+            .occupied(.init(previous: nil, next: 1)),
+        ])
+        XCTAssertEqual(queue.free, nil)
+
+        let capacity = queue.nodes.capacity
+
+        queue.dequeueAll(keepingCapacity: true)
+
+        XCTAssertEqual(queue.head, nil)
+        XCTAssertEqual(queue.tail, nil)
+        XCTAssertEqual(queue.nodes, [])
+        XCTAssertEqual(queue.free, nil)
+
+        XCTAssertEqual(queue.nodes.capacity, capacity)
+    }
+
+    func testRequeue() throws {
+        var queue = self.queue(count: 5)
+
+        XCTAssertEqual(queue.head, 4)
+        XCTAssertEqual(queue.tail, 0)
+        XCTAssertEqual(queue.nodes, [
+            .occupied(.init(previous: 1, next: nil)),
+            .occupied(.init(previous: 2, next: 0)),
+            .occupied(.init(previous: 3, next: 1)),
+            .occupied(.init(previous: 4, next: 2)),
+            .occupied(.init(previous: nil, next: 3)),
+        ])
+        XCTAssertEqual(queue.free, nil)
+
+        // dequeue head:
+        queue.requeue(2)
+
+        XCTAssertEqual(queue.head, 2)
+        XCTAssertEqual(queue.tail, 0)
+        XCTAssertEqual(queue.nodes, [
+            .occupied(.init(previous: 1, next: nil)),
+            .occupied(.init(previous: 3, next: 0)),
+            .occupied(.init(previous: nil, next: 4)),
+            .occupied(.init(previous: 4, next: 1)),
+            .occupied(.init(previous: 2, next: 3)),
+        ])
+        XCTAssertEqual(queue.free, nil)
+    }
 
     static var allTests = [
         ("testInit", testInit),
-//        ("testInitElements", testInitElements),
-//        ("testFirst", testFirst),
-//        ("testLast", testLast),
-//        ("testIsEmpty", testIsEmpty),
-//        ("testCount", testCount),
-//        ("testPrepend", testPrepend),
-//        ("testAppend", testAppend),
-//        ("testFirstIndexOf", testFirstIndexOf),
-//        ("testFirstIndexWhere", testFirstIndexWhere),
-//        ("testRemoveFirst", testRemoveFirst),
-//        ("testRemoveLast", testRemoveLast),
-//        ("testRemoveAt", testRemoveAt),
-//        ("testRemoveAllWhere", testRemoveAllWhere),
-//        ("testRemoveAll", testRemoveAll),
-//        ("testDoesNotLeak", testDoesNotLeak),
+        ("testEnqueue", testEnqueue),
+        ("testNext", testNext),
+        ("testDequeue", testDequeue),
+        ("testDequeueAll", testDequeueAll),
+        ("testDequeueAllKeepingCapacity", testDequeueAllKeepingCapacity),
+        ("testRequeue", testRequeue),
     ]
 }

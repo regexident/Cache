@@ -61,29 +61,15 @@ where
         defaultCost: Cost
     ) {
 
-        let totalCost: Cost = .zero
-
-        let tokensByKey: [Key: Token]
-        let elementsByToken: [Token: ElementContainer]
-        let policy: Policy
-
-        if let minimumCapacity = minimumCapacity {
-            tokensByKey = .init(minimumCapacity: minimumCapacity)
-            elementsByToken = .init(minimumCapacity: minimumCapacity)
-            policy = .init(minimumCapacity: minimumCapacity)
-        } else {
-            tokensByKey = .init()
-            elementsByToken = .init()
-            policy = .init()
-        }
+        let minimumCapacity = minimumCapacity ?? 0
 
         self.init(
             totalCostLimit: totalCostLimit,
             defaultCost: defaultCost,
-            totalCost: totalCost,
-            tokensByKey: tokensByKey,
-            elementsByToken: elementsByToken,
-            policy: policy
+            totalCost: .zero,
+            tokensByKey: .init(minimumCapacity: minimumCapacity),
+            elementsByToken: .init(minimumCapacity: minimumCapacity),
+            policy: .init(minimumCapacity: minimumCapacity)
         )
     }
 
@@ -205,7 +191,7 @@ where
             return nil
         }
 
-        guard let token = self.policy.remove() else {
+        guard let token = self.policy.next() else {
             return nil
         }
 
@@ -228,21 +214,17 @@ where
     private mutating func removeValue(
         forToken token: Token
     ) -> Element? {
-        guard let container = self.elementsByToken.removeValue(
-            forKey: token
-        ) else {
+        guard let container = self.elementsByToken.removeValue(forKey: token) else {
             return nil
         }
 
-        let element = container.element
-
         self.policy.remove(token)
 
-        self.tokensByKey.removeValue(forKey: element.key)
+        self.tokensByKey.removeValue(forKey: container.element.key)
 
         self.totalCost -= container.cost
 
-        return element
+        return container.element
     }
 
     private mutating func removeWhile(totalCostAbove totalCostLimit: Cost) {

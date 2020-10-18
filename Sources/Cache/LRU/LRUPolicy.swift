@@ -9,10 +9,10 @@ where
     Key: Hashable
 
 public struct LRUToken {
-    fileprivate let node: LRUQueue.Node
+    fileprivate let index: LRUQueue.Index
 
-    fileprivate init(node: LRUQueue.Node) {
-        self.node = node
+    fileprivate init(_ index: LRUQueue.Index) {
+        self.index = index
     }
 }
 
@@ -21,13 +21,13 @@ extension LRUToken: Equatable {
         lhs: LRUToken,
         rhs: LRUToken
     ) -> Bool {
-        ObjectIdentifier(lhs.node) == ObjectIdentifier(rhs.node)
+        lhs.index == rhs.index
     }
 }
 
 extension LRUToken: Hashable {
     public func hash(into hasher: inout Hasher) {
-        ObjectIdentifier(self.node).hash(into: &hasher)
+        self.index.hash(into: &hasher)
     }
 }
 
@@ -37,42 +37,49 @@ public struct LRUPolicy: CachePolicy {
     private typealias Node = LRUQueue.Node
     private typealias queue = LRUQueue
 
-    private let queue: queue
+    private var queue: queue
 
     public init() {
-        self.queue = .init()
+        self.init(minimumCapacity: 0)
+    }
+
+    public init(minimumCapacity: Int) {
+        self.queue = .init(minimumCapacity: minimumCapacity)
     }
 
     public mutating func insert() -> Token {
-        let node = self.queue.enqueue()
-        return .init(node: node)
+        let index = self.queue.enqueue()
+        return .init(index)
     }
 
     public mutating func use(_ token: Token) {
-        let node = token.node
-        self.queue.dequeue(node)
-        self.queue.enqueue(node)
+        let index = token.index
+        self.queue.requeue(index)
     }
 
-    public mutating func remove() -> Token? {
-        guard let node = self.queue.tail else {
+    public mutating func next() -> Token? {
+        guard let index = self.queue.next() else {
             return nil
         }
-
-        defer {
-            self.queue.dequeueLeastRecentlyUsed()
-        }
-
-        return .init(node: node)
+        return .init(index)
     }
 
     public mutating func remove(_ token: Token) {
-        self.queue.dequeue(token.node)
+        let index = token.index
+        self.queue.dequeue(index)
+    }
+
+    @inlinable
+    @inline(__always)
+    public mutating func removeAll() {
+        self.removeAll(keepingCapacity: false)
     }
 
     public mutating func removeAll(
         keepingCapacity keepCapacity: Bool
     ) {
-        self.queue.dequeueAll()
+        self.queue.dequeueAll(
+            keepingCapacity: keepCapacity
+        )
     }
 }
