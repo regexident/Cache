@@ -1,5 +1,3 @@
-import Foundation
-
 extension Optional {
     @inlinable
     @inline(__always)
