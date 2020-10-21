@@ -2,7 +2,7 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-extension Cache
+extension CustomCache
 where
     Cost == Int
 {
@@ -41,7 +41,7 @@ where
     }
 }
 
-extension Cache
+extension CustomCache
 where
     Cost == UInt
 {
@@ -80,7 +80,7 @@ where
     }
 }
 
-extension Cache
+extension CustomCache
 where
     Cost == Float
 {
@@ -119,7 +119,7 @@ where
     }
 }
 
-extension Cache
+extension CustomCache
 where
     Cost == Double
 {
