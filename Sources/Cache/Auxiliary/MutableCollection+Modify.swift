@@ -1,5 +1,3 @@
-import Foundation
-
 extension MutableCollection {
     @inlinable
     @inline(__always)

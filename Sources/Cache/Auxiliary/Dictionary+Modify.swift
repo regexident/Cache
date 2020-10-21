@@ -1,5 +1,3 @@
-import Foundation
-
 extension Dictionary {
     @inlinable
     @inline(__always)
