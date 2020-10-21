@@ -4,7 +4,6 @@ import XCTest
 
 final class LRUPolicyTests: XCTestCase {
     typealias Policy = LRUPolicy
-    typealias Token = Policy.Token
     typealias Index = Policy.Index
 
     func policy(
@@ -17,13 +16,6 @@ final class LRUPolicyTests: XCTestCase {
         }
 
         return policy
-    }
-
-    func testToken() throws {
-        let index: Index = 42
-        let token = Token(index: index)
-
-        XCTAssertEqual(token.index, index)
     }
 
     func testInit() throws {
@@ -40,8 +32,8 @@ final class LRUPolicyTests: XCTestCase {
 
         let head = policy.insert()
 
-        XCTAssertEqual(policy.head, head.index)
-        XCTAssertEqual(policy.tail, head.index)
+        XCTAssertEqual(policy.head, head)
+        XCTAssertEqual(policy.tail, head)
         XCTAssertEqual(policy.nodes, [
             .occupied(.init(previous: nil, next: nil)),
         ])
@@ -49,8 +41,8 @@ final class LRUPolicyTests: XCTestCase {
 
         let newHead = policy.insert()
 
-        XCTAssertEqual(policy.head, newHead.index)
-        XCTAssertEqual(policy.tail, head.index)
+        XCTAssertEqual(policy.head, newHead)
+        XCTAssertEqual(policy.tail, head)
         XCTAssertEqual(policy.nodes, [
             .occupied(.init(previous: 1, next: nil)),
             .occupied(.init(previous: nil, next: 0)),
@@ -72,10 +64,8 @@ final class LRUPolicyTests: XCTestCase {
         ])
         XCTAssertEqual(policy.firstFree, nil)
 
-        let tokenBefore = Token(index: 2)
-        let tokenAfter = policy.use(tokenBefore)
-
-        XCTAssertEqual(tokenAfter, tokenBefore)
+        let index: Index = 2
+        policy.use(index)
 
         XCTAssertEqual(policy.head, 2)
         XCTAssertEqual(policy.tail, 0)
@@ -89,15 +79,15 @@ final class LRUPolicyTests: XCTestCase {
         XCTAssertEqual(policy.firstFree, nil)
     }
 
-    func testNext() throws {
+    func testRemove() throws {
         var policy = self.policy(count: 3)
 
-        let token = try XCTUnwrap(policy.next())
+        let index = try XCTUnwrap(policy.remove())
 
-        XCTAssertEqual(token.index, policy.tail)
+        XCTAssertEqual(index, 0)
     }
 
-    func testRemove() throws {
+    func testRemoveIndex() throws {
         var policy = self.policy(count: 5)
 
         XCTAssertEqual(policy.head, 4)
@@ -112,7 +102,7 @@ final class LRUPolicyTests: XCTestCase {
         XCTAssertEqual(policy.firstFree, nil)
 
         // depolicy head:
-        policy.remove(.init(index: 4))
+        policy.remove(4)
 
         XCTAssertEqual(policy.head, 3)
         XCTAssertEqual(policy.tail, 0)
@@ -126,7 +116,7 @@ final class LRUPolicyTests: XCTestCase {
         XCTAssertEqual(policy.firstFree, 4)
 
         // depolicy middle:
-        policy.remove(.init(index: 2))
+        policy.remove(2)
 
         XCTAssertEqual(policy.head, 3)
         XCTAssertEqual(policy.tail, 0)
@@ -140,7 +130,7 @@ final class LRUPolicyTests: XCTestCase {
         XCTAssertEqual(policy.firstFree, 2)
 
         // depolicy tail:
-        policy.remove(.init(index: 0))
+        policy.remove(0)
 
         XCTAssertEqual(policy.head, 3)
         XCTAssertEqual(policy.tail, 1)
@@ -204,8 +194,8 @@ final class LRUPolicyTests: XCTestCase {
         ("testInit", testInit),
         ("testInsert", testInsert),
         ("testUse", testUse),
-        ("testNext", testNext),
         ("testRemove", testRemove),
+        ("testRemoveIndex", testRemoveIndex),
         ("testRemoveAll", testRemoveAll),
         ("testRemoveAllKeepingCapacity", testRemoveAllKeepingCapacity),
     ]
