@@ -2,12 +2,12 @@
 //
 //@testable import Cache
 //
-//final class LRUCacheTests: XCTestCase {
+//final class LruCacheTests: XCTestCase {
 //    typealias Key = Int
 //    typealias Value = String
 //    typealias Element = (key: Key, value: Value)
 //    typealias Cost = Int
-//    typealias Cache = LRUCache<Key, Value>
+//    typealias Cache = LruCache<Key, Value>
 //
 //    func cache(
 //        totalCostLimit: Cost? = nil,
