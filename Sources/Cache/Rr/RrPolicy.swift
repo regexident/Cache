@@ -2,16 +2,16 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-public typealias RRCache<Key, Value> = CustomCache<Key, Value, Int, RRPolicy>
+public typealias RrCache<Key, Value> = CustomCache<Key, Value, Int, RrPolicy>
 where
     Key: Hashable
 
-public typealias RRIndex = ChunkedBitIndex
+public typealias RrIndex = ChunkedBitIndex
 
-public struct RRPolicy: CachePolicy {
+public struct RrPolicy: CachePolicy {
     internal typealias Bits = UInt8
     internal typealias Chunk = BitChunk<Bits>
-    public typealias Index = RRIndex
+    public typealias Index = RrIndex
 
     public var isEmpty: Bool {
         self.count == 0
