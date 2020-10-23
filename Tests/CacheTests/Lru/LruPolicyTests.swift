@@ -3,7 +3,7 @@ import XCTest
 @testable import Cache
 
 final class LruPolicyTests: XCTestCase {
-    typealias Policy = LruPolicy
+    typealias Policy = CustomLruPolicy
     typealias Index = Policy.Index
 
     func policy(

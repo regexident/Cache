@@ -2,16 +2,9 @@ import XCTest
 
 @testable import Cache
 
-extension RrPolicy {
-    internal var chunkBits: [RrPolicy.Bits] {
-        self.chunks.map { chunk in
-            chunk.bits
-        }
-    }
-}
-
 final class RrPolicyTests: XCTestCase {
-    typealias Policy = RrPolicy
+    typealias Bits = UInt8
+    typealias Policy = CustomRrPolicy<Bits>
     typealias Index = Policy.Index
 
     func policy(
