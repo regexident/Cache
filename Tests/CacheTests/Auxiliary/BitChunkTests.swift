@@ -71,39 +71,39 @@ final class BitChunkTests: XCTestCase {
     func testMaskIndex() throws {
         let zeroIndexChunk = Chunk.mask(index: 0)
 
-        XCTAssertEqual(zeroIndexChunk.bits, 0b00000001)
+        XCTAssertEqual(zeroIndexChunk, 0b00000001)
 
         let threeIndexChunk = Chunk.mask(index: 3)
 
-        XCTAssertEqual(threeIndexChunk.bits, 0b00001000)
+        XCTAssertEqual(threeIndexChunk, 0b00001000)
 
         let sevenIndexChunk = Chunk.mask(index: 7)
 
-        XCTAssertEqual(sevenIndexChunk.bits, 0b10000000)
+        XCTAssertEqual(sevenIndexChunk, 0b10000000)
     }
 
     func testMaskRange() throws {
         let chunk = Chunk.mask(range: 2..<4)
 
-        XCTAssertEqual(chunk.bits, 0b00001100)
+        XCTAssertEqual(chunk, 0b00001100)
     }
 
     func testMaskRangeFrom() throws {
         let chunk = Chunk.mask(range: 2...)
 
-        XCTAssertEqual(chunk.bits, 0b11111100)
+        XCTAssertEqual(chunk, 0b11111100)
     }
 
     func testMaskRangeUpTo() throws {
         let chunk = Chunk.mask(range: ..<2)
 
-        XCTAssertEqual(chunk.bits, 0b00000011)
+        XCTAssertEqual(chunk, 0b00000011)
     }
 
     func testMaskRangeThrough() throws {
         let chunk = Chunk.mask(range: ...2)
 
-        XCTAssertEqual(chunk.bits, 0b00000111)
+        XCTAssertEqual(chunk, 0b00000111)
     }
 
     func testIsZerosAtMask() throws {
@@ -170,31 +170,31 @@ final class BitChunkTests: XCTestCase {
         )
     }
 
-    func testFirstOneInRangeFrom() throws {
-        let chunk = Chunk(bits: 0b00010101)
+    func testFirstZeroInRange() throws {
+        let chunk = Chunk(bits: 0b11101010)
 
         XCTAssertEqual(
-            chunk.indexOfFirstOne(inRange: 0...),
+            chunk.indexOfFirstZero(inRange: 0..<3),
             0
         )
 
         XCTAssertEqual(
-            chunk.indexOfFirstOne(inRange: 1...),
+            chunk.indexOfFirstZero(inRange: 1..<3),
             2
         )
 
         XCTAssertEqual(
-            chunk.indexOfFirstOne(inRange: 2...),
+            chunk.indexOfFirstZero(inRange: 2..<3),
             2
         )
 
         XCTAssertEqual(
-            chunk.indexOfFirstOne(inRange: 3...),
+            chunk.indexOfFirstZero(inRange: 3..<3),
             4
         )
 
         XCTAssertNil(
-            chunk.indexOfFirstOne(inRange: 5...)
+            chunk.indexOfFirstZero(inRange: 5..<8)
         )
     }
 
