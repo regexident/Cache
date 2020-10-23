@@ -83,20 +83,22 @@ where
         var (chunkIndex, startBitIndex) = startIndex.indices(
             given: Bits.self
         )
+        let chunkCount = self.chunks.count
 
-        // Skip over full chunks:
-        for _ in 0...self.chunks.count {
+        for _ in 0...chunkCount {
             let mask = Chunk.mask(range: startBitIndex..<Chunk.bitWidth)
             guard self.chunks[chunkIndex].isOnes(atMask: mask) else {
                 break
             }
             startBitIndex = 0
             chunkIndex += 1
+            if chunkIndex == chunkCount {
+                chunkIndex = 0
+            }
         }
 
-        let chunk = self.chunks[chunkIndex]
         let range = startBitIndex..<Bits.bitWidth
-
+        let chunk = self.chunks[chunkIndex]
         let endBitIndexOrNil = chunk.indexOfFirstZero(inRange: range)
         guard let endBitIndex = endBitIndexOrNil else {
             fatalError("Expected vacancy, found none")
@@ -119,20 +121,22 @@ where
         var (chunkIndex, startBitIndex) = startIndex.indices(
             given: Bits.self
         )
+        let chunkCount = self.chunks.count
 
-        // Skip over full chunks:
-        for _ in 0...self.chunks.count {
+        for _ in 0...chunkCount {
             let mask = Chunk.mask(range: startBitIndex..<Chunk.bitWidth)
             guard self.chunks[chunkIndex].isZeros(atMask: mask) else {
                 break
             }
             startBitIndex = 0
             chunkIndex += 1
+            if chunkIndex == chunkCount {
+                chunkIndex = 0
+            }
         }
 
-        let chunk = self.chunks[chunkIndex]
         let range = startBitIndex..<Bits.bitWidth
-
+        let chunk = self.chunks[chunkIndex]
         let endBitIndexOrNil = chunk.indexOfFirstOne(inRange: range)
         guard let endBitIndex = endBitIndexOrNil else {
             fatalError("Expected occupancy, found none")
@@ -189,7 +193,7 @@ where
         return .init(absoluteBitIndex: index)
     }
 
-    private func isValid() -> Bool {
+    internal func isValid() -> Bool {
         let validCount = self.chunks.reduce(0) {
             $0 + $1.count
         } == self.count
