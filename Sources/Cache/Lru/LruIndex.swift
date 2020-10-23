@@ -2,7 +2,7 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-public struct LRUIndex {
+public struct LruIndex {
     internal let value: Int
 
     internal init(_ value: Int) {
@@ -10,7 +10,7 @@ public struct LRUIndex {
     }
 }
 
-extension LRUIndex: Equatable {
+extension LruIndex: Equatable {
     public static func == (
         lhs: Self,
         rhs: Self
@@ -19,19 +19,19 @@ extension LRUIndex: Equatable {
     }
 }
 
-extension LRUIndex: Hashable {
+extension LruIndex: Hashable {
     public func hash(into hasher: inout Hasher) {
         self.value.hash(into: &hasher)
     }
 }
 
-extension LRUIndex: CustomStringConvertible {
+extension LruIndex: CustomStringConvertible {
     public var description: String {
         String(describing: self.value)
     }
 }
 
-extension LRUIndex: ExpressibleByIntegerLiteral {
+extension LruIndex: ExpressibleByIntegerLiteral {
     public typealias IntegerLiteralType = UInt
 
     public init(integerLiteral value: IntegerLiteralType) {

@@ -2,12 +2,12 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-public typealias LRUCache<Key, Value> = CustomCache<Key, Value, Int, LRUPolicy>
+public typealias LruCache<Key, Value> = CustomCache<Key, Value, Int, LruPolicy>
 where
     Key: Hashable
 
-public struct LRUPolicy: CachePolicy {
-    public typealias Index = LRUIndex
+public struct LruPolicy: CachePolicy {
+    public typealias Index = LruIndex
 
     internal enum Node: Equatable {
         internal struct Free: Equatable {
