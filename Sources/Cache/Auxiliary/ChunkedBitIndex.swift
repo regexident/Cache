@@ -3,7 +3,6 @@
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 public struct ChunkedBitIndex {
-    @usableFromInline
     internal typealias Indices = (chunk: Int, bit: Int)
 
     private var _absoluteBitIndex: UInt
@@ -23,19 +22,16 @@ public struct ChunkedBitIndex {
         }
     }
 
-    @usableFromInline
     internal init() {
         self.init(absoluteBitIndex: 0)
     }
 
-    @usableFromInline
     internal init(absoluteBitIndex: Int) {
         assert(absoluteBitIndex >= 0)
 
         self._absoluteBitIndex = .init(absoluteBitIndex)
     }
 
-    @usableFromInline
     internal init<Chunk>(
         given chunkType: Chunk.Type,
         chunkIndex: Int,
@@ -65,7 +61,6 @@ public struct ChunkedBitIndex {
         self._absoluteBitIndex = .init(absoluteBitIndex)
     }
 
-    @usableFromInline
     internal func chunkIndex<Chunk>(
         given chunkType: Chunk.Type
     ) -> Int
@@ -86,7 +81,6 @@ public struct ChunkedBitIndex {
         return self.absoluteBitIndex >> bitsPerBitIndex
     }
 
-    @usableFromInline
     internal func bitIndex<Chunk>(
         given chunkType: Chunk.Type
     ) -> Int
@@ -108,7 +102,6 @@ public struct ChunkedBitIndex {
         return self.absoluteBitIndex & mask
     }
 
-    @usableFromInline
     internal func indices<Chunk>(
         given chunkType: Chunk.Type
     ) -> Indices
@@ -133,7 +126,16 @@ public struct ChunkedBitIndex {
         return (chunk: chunkIndex, bit: bitIndex)
     }
 
-    @usableFromInline
+    internal func advanced(by distance: Int) -> Self {
+        var result = self
+        result.advance(by: distance)
+        return result
+    }
+
+    internal mutating func advance(by distance: Int) {
+        self.absoluteBitIndex += distance
+    }
+
     internal static func bitsPerBitIndex<Chunk>(
         given chunkType: Chunk.Type
     ) -> Int
@@ -154,7 +156,6 @@ public struct ChunkedBitIndex {
         return bitsPerBitIndex
     }
 
-    @usableFromInline
     internal static func bitIndexMask<Chunk>(
         given chunkType: Chunk.Type
     ) -> Int

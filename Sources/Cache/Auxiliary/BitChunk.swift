@@ -18,10 +18,6 @@ where
         .init(bits: ~0b0 as Bits)
     }
 
-    fileprivate static var range: Range<Int> {
-        0..<self.bitWidth
-    }
-
     internal var isEmpty: Bool {
         self == .zeros
     }
@@ -44,42 +40,66 @@ where
         self.bits = bits
     }
 
+    internal static func emptyMask() -> Bits {
+        (0b0 as Bits)
+    }
+
+    internal static func fullMask() -> Bits {
+        ~(0b0 as Bits)
+    }
+
     internal static func mask(
         index: Int
-    ) -> Self {
-        .init(bits: (0b1 as Bits) << index)
+    ) -> Bits {
+        (0b1 as Bits) << index
     }
 
     internal static func mask(
         range: Range<Int>
-    ) -> Self {
+    ) -> Bits {
+        guard range != 0..<Bits.bitWidth else {
+            return self.fullMask()
+        }
         let suffix = self.mask(range: range.lowerBound...)
         let prefix = self.mask(range: ..<range.upperBound)
-        return .init(bits: prefix.bits & suffix.bits)
+        let bits = prefix & suffix
+        return bits
+    }
+
+    internal static func mask(
+        range: ClosedRange<Int>
+    ) -> Bits {
+        guard range != 0...Bits.bitWidth else {
+            return self.fullMask()
+        }
+        let suffix = self.mask(range: range.lowerBound...)
+        let prefix = self.mask(range: ...range.upperBound)
+        let bits = prefix & suffix
+        return bits
     }
 
     internal static func mask(
         range: PartialRangeFrom<Int>
-    ) -> Self {
+    ) -> Bits {
         let offset = range.lowerBound
-        let bits = ~(0b0 as Bits) << offset
-        return .init(bits: bits)
+        let bits = self.fullMask() << offset
+        return bits
     }
 
     internal static func mask(
         range: PartialRangeUpTo<Int>
-    ) -> Self {
+    ) -> Bits {
         let offset = Bits.bitWidth - range.upperBound
-        let bits = ~(0b0 as Bits) >> offset
-        return .init(bits: bits)
+        let bits = self.fullMask() >> offset
+        return bits
     }
 
     internal static func mask(
         range: PartialRangeThrough<Int>
-    ) -> Self {
+    ) -> Bits {
         let offset = Bits.bitWidth - range.upperBound - 1
-        let bits = ~(0b0 as Bits) >> offset
-        return .init(bits: bits)
+        let bits = self.fullMask() >> offset
+        return bits
     }
 
     internal mutating func setZeros(atMask mask: Bits) {
@@ -91,7 +111,7 @@ where
     }
 
     internal func isZeros(atMask mask: Bits) -> Bool {
-        (self.bits & mask) == (0b0 as Bits)
+        (self.bits & mask) == Self.emptyMask()
     }
 
     internal func isOnes(atMask mask: Bits) -> Bool {
@@ -103,23 +123,31 @@ where
     }
 
     internal func hasOnes(atMask mask: Bits) -> Bool {
-        (self.bits & mask) != (0b0 as Bits)
+        (self.bits & mask) != Self.emptyMask()
     }
 
-    internal func indexOfFirstOne(
-        inRange range: PartialRangeFrom<Int>
+    internal func indexOfFirstZero(
+        inRange range: Range<Int>
     ) -> Int? {
-        self.indexOfFirstOne(
-            inRange: Self.clamped(range: range)
-        )
+        Self.indexOfFirstOne(in: ~self.bits, range: range)
     }
 
     internal func indexOfFirstOne(
         inRange range: Range<Int>
     ) -> Int? {
-        let bits = self.bits >> range.lowerBound
+        Self.indexOfFirstOne(in: self.bits, range: range)
+    }
+
+    private static func indexOfFirstOne(
+        in bits: Bits,
+        range: Range<Int>
+    ) -> Int? {
+        guard bits != Self.emptyMask() else {
+            return nil
+        }
+        let bits = bits >> range.lowerBound
         let index = range.lowerBound + bits.trailingZeroBitCount
-        guard Self.range.contains(index) else {
+        guard (0..<Bits.bitWidth).contains(index) else {
             return nil
         }
         return index
@@ -128,23 +156,21 @@ where
     private static func clamped(
         range: PartialRangeFrom<Int>
     ) -> Range<Int> {
-        let chunkRange = Self.range
         let lowerBound = Swift.max(
             range.lowerBound,
-            chunkRange.lowerBound
+            0
         )
-        return lowerBound..<chunkRange.upperBound
+        return lowerBound..<Bits.bitWidth
     }
 
     private static func clamped(
         range: PartialRangeUpTo<Int>
     ) -> Range<Int> {
-        let chunkRange = Self.range
         let upperBound = Swift.min(
             range.upperBound,
-            chunkRange.upperBound
+            Bits.bitWidth
         )
-        return chunkRange.lowerBound..<upperBound
+        return 0..<upperBound
     }
 }
 
