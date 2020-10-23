@@ -2,16 +2,16 @@ import XCTest
 
 @testable import Cache
 
-extension RRPolicy {
-    internal var chunkBits: [RRPolicy.Bits] {
+extension RrPolicy {
+    internal var chunkBits: [RrPolicy.Bits] {
         self.chunks.map { chunk in
             chunk.bits
         }
     }
 }
 
-final class RRPolicyTests: XCTestCase {
-    typealias Policy = RRPolicy
+final class RrPolicyTests: XCTestCase {
+    typealias Policy = RrPolicy
     typealias Index = Policy.Index
 
     func policy(
@@ -90,7 +90,7 @@ final class RRPolicyTests: XCTestCase {
 
         policy.use(.init(absoluteBitIndex: 3))
 
-        // RRPolicy does not do anything on `.use(…)`
+        // RrPolicy does not do anything on `.use(…)`
         // so we shouldn't see any change either:
 
         XCTAssertEqual(policy.count, 3)
