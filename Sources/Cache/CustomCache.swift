@@ -307,7 +307,7 @@ where
         }
     }
 
-    private func isValid() -> Bool {
+    internal func isValid() -> Bool {
         let indexCount = self.indicesByKey.count
         let elementCount = self.elementsByIndex.count
         let policyIndexCount = self.policy.count
