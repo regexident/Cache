@@ -68,16 +68,6 @@ where
 
     internal init(
         count: Int,
-        chunkBits: [Bits]
-    ) {
-        self.init(
-            count: count,
-            chunks: chunkBits.map { .init(bits: $0) }
-        )
-    }
-
-    internal init(
-        count: Int,
         chunks: [Chunk]
     ) {
         self.count = count
