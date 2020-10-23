@@ -7,7 +7,8 @@ final class LruCacheTests: XCTestCase {
     typealias Value = String
     typealias Element = (key: Key, value: Value)
     typealias Cost = Int
-    typealias Cache = LruCache<Key, Value>
+    typealias Policy = CustomLruPolicy
+    typealias Cache = CustomCache<Key, Value, Cost, Policy>
 
     func cache(
         totalCostLimit: Cost? = nil,
