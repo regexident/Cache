@@ -4,7 +4,7 @@
 
 internal struct BitChunk<Bits>
 where
-    Bits: BinaryInteger & FixedWidthInteger
+    Bits: FixedWidthInteger
 {
     internal static var bitWidth: Int {
         Bits.bitWidth
