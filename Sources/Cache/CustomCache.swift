@@ -108,6 +108,26 @@ where
         self.policy = policy
     }
 
+    public mutating func cachedValue(
+        forKey key: Key,
+        cost: Cost? = nil,
+        by closure: () throws -> Value
+    ) rethrows -> Value {
+        if let index = self.indicesByKey[key] {
+            return self.value(forIndex: index)
+        }
+
+        let value = try closure()
+
+        self.setValue(
+            value,
+            forKey: key,
+            cost: cost
+        )
+
+        return value
+    }
+
     public mutating func value(
         forKey key: Key
     ) -> Value? {
@@ -115,15 +135,7 @@ where
             return nil
         }
 
-        guard let container = self.elementsByIndex[index] else {
-            fatalError("Expected element, found nil")
-        }
-
-        self.policy.use(index)
-
-        assert(self.isValid())
-
-        return container.element.value
+        return self.value(forIndex: index)
     }
 
     public func peekValue(
@@ -217,6 +229,20 @@ where
         self.indicesByKey.removeAll(keepingCapacity: keepCapacity)
         self.elementsByIndex.removeAll(keepingCapacity: keepCapacity)
         self.policy.removeAll(keepingCapacity: keepCapacity)
+    }
+
+    private mutating func value(
+        forIndex index: Index
+    ) -> Value {
+        guard let container = self.elementsByIndex[index] else {
+            fatalError("Expected element, found nil")
+        }
+
+        self.policy.use(index)
+
+        assert(self.isValid())
+
+        return container.element.value
     }
 
     private mutating func insertValue(
