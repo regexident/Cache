@@ -14,11 +14,19 @@ let package = Package(
         ),
     ],
     dependencies: [
+        .package(
+            url: "https://github.com/apple/swift-log.git",
+            from: "1.2.0"
+        ),
     ],
     targets: [
         .target(
             name: "Cache",
             dependencies: [
+                .product(
+                    name: "Logging",
+                    package: "swift-log"
+                )
             ]
         ),
         .testTarget(
