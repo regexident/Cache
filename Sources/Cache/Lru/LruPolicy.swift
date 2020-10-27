@@ -2,6 +2,8 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
+import Logging
+
 public typealias LruCache<Key, Value> = CustomLruCache<Key, Value, Int>
 where
     Key: Hashable
@@ -108,6 +110,18 @@ public struct CustomLruPolicy: CachePolicy {
     }
 
     public mutating func insert() -> Index {
+        logger.trace("\(type(of: self)).\(#function)")
+        self.logState(to: logger)
+
+        defer {
+            self.logState(to: logger)
+            logger.trace("")
+
+            #if DEBUG
+            assert(self.isValid())
+            #endif
+        }
+
         if self.firstFree == nil {
             self.firstFree = .init(self.nodes.count)
             self.nodes.append(.free(.init(nextFree: nil)))
@@ -141,14 +155,22 @@ public struct CustomLruPolicy: CachePolicy {
         self.firstFree = free
         self.count += 1
 
-        #if DEBUG
-        assert(self.isValid())
-        #endif
-
         return index
     }
 
     public mutating func use(_ index: Index) {
+        logger.trace("\(type(of: self)).\(#function)")
+        self.logState(to: logger)
+
+        defer {
+            self.logState(to: logger)
+            logger.trace("")
+
+            #if DEBUG
+            assert(self.isValid())
+            #endif
+        }
+
         guard self.head != index else {
             return
         }
@@ -158,27 +180,43 @@ public struct CustomLruPolicy: CachePolicy {
         let insertedIndex = self.insert()
 
         assert(insertedIndex == index)
-
-        #if DEBUG
-        assert(self.isValid())
-        #endif
     }
 
     public mutating func remove() -> Index? {
+        logger.trace("\(type(of: self)).\(#function)")
+        self.logState(to: logger)
+
+        defer {
+            self.logState(to: logger)
+            logger.trace("")
+
+            #if DEBUG
+            assert(self.isValid())
+            #endif
+        }
+
         guard let index = self.tail else {
             return nil
         }
 
         self.remove(index)
 
-        #if DEBUG
-        assert(self.isValid())
-        #endif
-
         return index
     }
 
     public mutating func remove(_ index: Index) {
+        logger.trace("\(type(of: self)).\(#function)")
+        self.logState(to: logger)
+
+        defer {
+            self.logState(to: logger)
+            logger.trace("")
+
+            #if DEBUG
+            assert(self.isValid())
+            #endif
+        }
+
         let nodeOrNil: Node.Occupied? = self.modifyNode(at: index) { node in
             switch node {
             case .free(_):
@@ -217,10 +255,6 @@ public struct CustomLruPolicy: CachePolicy {
         self.nodes[index.value] = .free(.init(nextFree: self.firstFree))
         self.firstFree = index
         self.count -= 1
-
-        #if DEBUG
-        assert(self.isValid())
-        #endif
     }
 
     @inlinable
@@ -232,16 +266,24 @@ public struct CustomLruPolicy: CachePolicy {
     public mutating func removeAll(
         keepingCapacity keepCapacity: Bool
     ) {
+        logger.trace("\(type(of: self)).\(#function)")
+        self.logState(to: logger)
+
+        defer {
+            self.logState(to: logger)
+            logger.trace("")
+
+            #if DEBUG
+            assert(self.isValid())
+            #endif
+        }
+
         self.head = nil
         self.tail = nil
 
         self.nodes.removeAll(keepingCapacity: keepCapacity)
         self.firstFree = nil
         self.count = 0
-
-        #if DEBUG
-        assert(self.isValid())
-        #endif
     }
 
     private mutating func modifyOccupiedNode<T>(
@@ -268,6 +310,20 @@ public struct CustomLruPolicy: CachePolicy {
         self.nodes.modifyElement(at: index.value) { node in
             return closure(&node)
         }
+    }
+
+    private func logState(to logger: Logger = logger) {
+        guard logger.logLevel <= .trace else {
+            return
+        }
+
+        let count = self.count
+        let head = self.head.map { String(describing: $0) } ?? "nil"
+            let tail = self.tail.map { String(describing: $0) } ?? "nil"
+
+        logger.trace("count: \(count)")
+        logger.trace("head: \(head)")
+        logger.trace("tail: \(tail)")
     }
 
     #if DEBUG
