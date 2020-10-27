@@ -115,7 +115,7 @@ where
             logger.trace("")
 
             #if DEBUG
-            assert(self.isValid())
+            assert(self.isValid() != false)
             #endif
         }
 
@@ -176,7 +176,7 @@ where
             logger.trace("")
 
             #if DEBUG
-            assert(self.isValid())
+            assert(self.isValid() != false)
             #endif
         }
 
@@ -197,7 +197,7 @@ where
             logger.trace("")
 
             #if DEBUG
-            assert(self.isValid())
+            assert(self.isValid() != false)
             #endif
         }
 
@@ -256,7 +256,7 @@ where
             logger.trace("")
 
             #if DEBUG
-            assert(self.isValid())
+            assert(self.isValid() != false)
             #endif
         }
 
@@ -285,7 +285,7 @@ where
             logger.trace("")
 
             #if DEBUG
-            assert(self.isValid())
+            assert(self.isValid() != false)
             #endif
         }
 
@@ -360,14 +360,15 @@ where
         logger.trace("referenced: [\(referenced)]")
     }
 
-    internal func isValid() -> Bool {
+    internal func isValid() -> Bool? {
         guard shouldValidate else {
-            return true
+            return nil
         }
 
         var count: Int = 0
         for block in self.blocks {
-            guard block.isValid() else {
+            let isValid = block.isValid() != false
+            guard isValid else {
                 return false
             }
             count += block.occupied.count

@@ -241,7 +241,7 @@ where
         self.policy.use(index)
 
         #if DEBUG
-        assert(self.isValid())
+        assert(self.isValid() != false)
         #endif
 
         return container.element.value
@@ -277,7 +277,7 @@ where
         self.totalCost += cost
 
         #if DEBUG
-        assert(self.isValid())
+        assert(self.isValid() != false)
         #endif
     }
 
@@ -325,7 +325,7 @@ where
         self.totalCost -= container.cost
 
         #if DEBUG
-        assert(self.isValid())
+        assert(self.isValid() != false)
         #endif
 
         return container.element
@@ -340,9 +340,9 @@ where
     }
 
     #if DEBUG
-    internal func isValid() -> Bool {
+    internal func isValid() -> Bool? {
         guard shouldValidate else {
-            return true
+            return nil
         }
 
         let uniqueCounts: Set<Int> = [
