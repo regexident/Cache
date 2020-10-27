@@ -199,6 +199,61 @@ final class ClockCacheTests: XCTestCase {
         XCTAssertEqual(cache.value(forKey: 3), nil)
     }
 
+    func testSmoke() throws {
+        shouldValidate = true
+        defer {
+            shouldValidate = false
+        }
+        
+        let capacity: Int = 10
+        let keyCount: Int = 100
+        let accessCount: Int = 1000
+
+        let keys: Range<Int> = 0..<keyCount
+
+        var cache = Cache(totalCostLimit: capacity)
+
+        for i in 0..<accessCount {
+            let index = i % Int(Double(capacity) * 1.1)
+            let key = keys[index]
+            let _ = cache.cachedValue(forKey: key) {
+                String(describing: key)
+            }
+        }
+    }
+
+    func testCacheMissRatio() throws {
+        let capacity: Int = 10
+        let keyCount: Int = 100
+        let accessCount: Int = 1000
+
+        let keys: Range<Int> = 0..<keyCount
+        var keyFrequencies: [Key: Int] = [:]
+        var accessedKeys: Set<Key> = []
+
+        var cache = Cache(totalCostLimit: capacity)
+        var cacheMisses: [Key: Int] = [:]
+
+        for i in 0..<accessCount {
+            let index = i % Int(Double(capacity) * 1.25)
+
+            let key = keys[index % keyCount]
+
+            keyFrequencies[key, default: 0] += 1
+            let _ = cache.cachedValue(forKey: key) {
+                cacheMisses[key, default: 0] += 1
+                return String(describing: key)
+            }
+            accessedKeys.insert(key)
+        }
+
+        // Subtract `count` to filter out initial compulsory cache misses:
+        let totalCacheMisses = cacheMisses.values.reduce(0, +) - cacheMisses.count
+        let cacheMissRatio: Double = 1.0 - (1.0 / Double(accessCount) * Double(totalCacheMisses))
+
+        XCTAssertLessThanOrEqual(cacheMissRatio, 0.015)
+    }
+
     static var allTests = [
         ("testInit", testInit),
         ("testTotalCostLimit", testTotalCostLimit),
@@ -209,5 +264,7 @@ final class ClockCacheTests: XCTestCase {
         ("testSetValueForKey", testSetValueForKey),
         ("testUpdateValueForKey", testUpdateValueForKey),
         ("testValueForKey", testValueForKey),
+        ("testSmoke", testSmoke),
+        ("testCacheMissRatio", testCacheMissRatio),
     ]
 }
