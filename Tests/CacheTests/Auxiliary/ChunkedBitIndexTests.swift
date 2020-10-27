@@ -55,75 +55,29 @@ final class ChunkedBitIndexTests: XCTestCase {
         )
     }
 
-    func testChunkIndexGiven() throws {
+    func testIndicesGiven() throws {
         let absoluteBitIndex: Int = 1234
         let index = Index(absoluteBitIndex: absoluteBitIndex)
 
-        XCTAssertEqual(
-            index.chunkIndex(given: UInt8.self),
-            absoluteBitIndex / 8
-        )
-        XCTAssertEqual(
-            index.chunkIndex(given: UInt16.self),
-            absoluteBitIndex / 16
-        )
-        XCTAssertEqual(
-            index.chunkIndex(given: UInt32.self),
-            absoluteBitIndex / 32
-        )
-        XCTAssertEqual(
-            index.chunkIndex(given: UInt64.self),
-            absoluteBitIndex / 64
-        )
-    }
+        let indicesUInt8 = index.indices(given: UInt8.self)
 
-    func testBitIndexGiven() throws {
-        let absoluteBitIndex: Int = 1234
-        let index = Index(absoluteBitIndex: absoluteBitIndex)
-        XCTAssertEqual(
-            index.bitIndex(given: UInt8.self),
-            absoluteBitIndex % 8
-        )
-        XCTAssertEqual(
-            index.bitIndex(given: UInt16.self),
-            absoluteBitIndex % 16
-        )
-        XCTAssertEqual(
-            index.bitIndex(given: UInt32.self),
-            absoluteBitIndex % 32
-        )
-        XCTAssertEqual(
-            index.bitIndex(given: UInt64.self),
-            absoluteBitIndex % 64
-        )
-    }
+        XCTAssertEqual(indicesUInt8.chunk, absoluteBitIndex / 8)
+        XCTAssertEqual(indicesUInt8.bit, absoluteBitIndex % 8)
 
-    func testBitsPerBitIndexGiven() throws {
-        let bitsUInt8 = Index.bitsPerBitIndex(given: UInt8.self)
-        XCTAssertEqual(bitsUInt8, 3)
+        let indicesUInt16 = index.indices(given: UInt16.self)
 
-        let bitsUInt16 = Index.bitsPerBitIndex(given: UInt16.self)
-        XCTAssertEqual(bitsUInt16, 4)
+        XCTAssertEqual(indicesUInt16.chunk, absoluteBitIndex / 16)
+        XCTAssertEqual(indicesUInt16.bit, absoluteBitIndex % 16)
 
-        let bitsUInt32 = Index.bitsPerBitIndex(given: UInt32.self)
-        XCTAssertEqual(bitsUInt32, 5)
+        let indicesUInt32 = index.indices(given: UInt32.self)
 
-        let bitsUInt64 = Index.bitsPerBitIndex(given: UInt64.self)
-        XCTAssertEqual(bitsUInt64, 6)
-    }
+        XCTAssertEqual(indicesUInt32.chunk, absoluteBitIndex / 32)
+        XCTAssertEqual(indicesUInt32.bit, absoluteBitIndex % 32)
 
-    func testBitIndexMaskGiven() throws {
-        let maskUInt8 = Index.bitIndexMask(given: UInt8.self)
-        XCTAssertEqual(maskUInt8, 0b00000111)
+        let indicesUInt64 = index.indices(given: UInt64.self)
 
-        let maskUInt16 = Index.bitIndexMask(given: UInt16.self)
-        XCTAssertEqual(maskUInt16, 0b00001111)
-
-        let maskUInt32 = Index.bitIndexMask(given: UInt32.self)
-        XCTAssertEqual(maskUInt32, 0b00011111)
-
-        let maskUInt64 = Index.bitIndexMask(given: UInt64.self)
-        XCTAssertEqual(maskUInt64, 0b00111111)
+        XCTAssertEqual(indicesUInt64.chunk, absoluteBitIndex / 64)
+        XCTAssertEqual(indicesUInt64.bit, absoluteBitIndex % 64)
     }
 
     func testAdvancedBy() throws {
@@ -175,10 +129,7 @@ final class ChunkedBitIndexTests: XCTestCase {
         ("testInit", testInit),
         ("testInitAbsoluteBitIndex", testInitAbsoluteBitIndex),
         ("testInitGivenChunkIndexBitIndex", testInitGivenChunkIndexBitIndex),
-        ("testChunkIndexGiven", testChunkIndexGiven),
-        ("testBitIndexGiven", testBitIndexGiven),
-        ("testBitsPerBitIndexGiven", testBitsPerBitIndexGiven),
-        ("testBitIndexMaskGiven", testBitIndexMaskGiven),
+        ("testIndicesGiven", testIndicesGiven),
         ("testAdvancedBy", testAdvancedBy),
     ]
 }
