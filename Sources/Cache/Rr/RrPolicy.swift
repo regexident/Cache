@@ -109,6 +109,10 @@ where
         let index = Self.index(chunk: chunkIndex, bit: endBitIndex)
         self.count += 1
 
+        #if DEBUG
+        assert(self.isValid())
+        #endif
+
         return index
     }
 
@@ -147,6 +151,10 @@ where
         let index = Self.index(chunk: chunkIndex, bit: endBitIndex)
         self.count -= 1
 
+        #if DEBUG
+        assert(self.isValid())
+        #endif
+
         return index
     }
 
@@ -155,6 +163,10 @@ where
         let mask = Chunk.mask(index: bitIndex)
         self.chunks[chunkIndex].setZeros(atMask: mask)
         self.count -= 1
+
+        #if DEBUG
+        assert(self.isValid())
+        #endif
     }
 
     @inlinable
@@ -168,6 +180,10 @@ where
     ) {
         self.count = 0
         self.chunks.removeAll(keepingCapacity: keepCapacity)
+
+        #if DEBUG
+        assert(self.isValid())
+        #endif
     }
 
     private static func chunksFor(count: Int) -> Int {
@@ -193,6 +209,7 @@ where
         return .init(absoluteBitIndex: index)
     }
 
+    #if DEBUG
     internal func isValid() -> Bool {
         let validCount = self.chunks.reduce(0) {
             $0 + $1.count
@@ -204,4 +221,5 @@ where
 
         return true
     }
+    #endif
 }
