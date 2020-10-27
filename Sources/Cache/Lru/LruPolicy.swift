@@ -113,10 +113,6 @@ public struct CustomLruPolicy: CachePolicy {
             self.nodes.append(.free(.init(nextFree: nil)))
         }
 
-        #if DEBUG
-        let countBefore = self.count
-        #endif
-
         let index = self.firstFree!
         let currentHead = self.head
 
@@ -146,7 +142,7 @@ public struct CustomLruPolicy: CachePolicy {
         self.count += 1
 
         #if DEBUG
-        assert(self.count - 1 == countBefore)
+        assert(self.isValid())
         #endif
 
         return index
@@ -162,21 +158,27 @@ public struct CustomLruPolicy: CachePolicy {
         let insertedIndex = self.insert()
 
         assert(insertedIndex == index)
+
+        #if DEBUG
+        assert(self.isValid())
+        #endif
     }
 
     public mutating func remove() -> Index? {
         guard let index = self.tail else {
             return nil
         }
+
         self.remove(index)
+
+        #if DEBUG
+        assert(self.isValid())
+        #endif
+
         return index
     }
 
     public mutating func remove(_ index: Index) {
-        #if DEBUG
-        let countBefore = self.count
-        #endif
-
         let nodeOrNil: Node.Occupied? = self.modifyNode(at: index) { node in
             switch node {
             case .free(_):
@@ -217,7 +219,7 @@ public struct CustomLruPolicy: CachePolicy {
         self.count -= 1
 
         #if DEBUG
-        assert(self.count + 1 == countBefore)
+        assert(self.isValid())
         #endif
     }
 
@@ -236,6 +238,10 @@ public struct CustomLruPolicy: CachePolicy {
         self.nodes.removeAll(keepingCapacity: keepCapacity)
         self.firstFree = nil
         self.count = 0
+
+        #if DEBUG
+        assert(self.isValid())
+        #endif
     }
 
     private mutating func modifyOccupiedNode<T>(
@@ -263,4 +269,77 @@ public struct CustomLruPolicy: CachePolicy {
             return closure(&node)
         }
     }
+
+    #if DEBUG
+    internal func isValid() -> Bool {
+        guard shouldValidate else {
+            return true
+        }
+
+        var visitedFree: Set<Index> = []
+        var visitedOccupied: Set<Index> = []
+
+        var currentIndex: Index? = self.head
+        var previousIndex: Index? = nil
+
+        // Walk linked list:
+
+        while let index = currentIndex {
+            let node = self.nodes[index.value]
+            guard case .occupied(let occupied) = node else {
+                return false
+            }
+
+            visitedOccupied.insert(index)
+
+            if currentIndex == self.head {
+                // No node before head:
+                guard occupied.previous == nil else {
+                    return false
+                }
+            } else if currentIndex == self.tail {
+                // No node after tail:
+                guard occupied.next == nil else {
+                    return false
+                }
+            }
+
+            // Proper bi-directional links:
+            guard occupied.previous == previousIndex else {
+                return false
+            }
+
+            previousIndex = currentIndex
+            currentIndex = occupied.next
+        }
+
+        // Walk free list:
+
+        currentIndex = self.firstFree
+
+        while let index = currentIndex {
+            let node = self.nodes[index.value]
+            guard case .free(let free) = node else {
+                return false
+            }
+
+            visitedFree.insert(index)
+
+            previousIndex = currentIndex
+            currentIndex = free.nextFree
+        }
+
+        guard visitedOccupied.count == self.count else {
+            return false
+        }
+
+        let visited = visitedFree.union(visitedOccupied)
+
+        guard visited.count == self.nodes.count else {
+            return false
+        }
+
+        return true
+    }
+    #endif
 }

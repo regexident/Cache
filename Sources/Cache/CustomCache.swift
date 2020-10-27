@@ -240,7 +240,9 @@ where
 
         self.policy.use(index)
 
+        #if DEBUG
         assert(self.isValid())
+        #endif
 
         return container.element.value
     }
@@ -274,7 +276,9 @@ where
 
         self.totalCost += cost
 
+        #if DEBUG
         assert(self.isValid())
+        #endif
     }
 
     private mutating func replaceValue(
@@ -320,7 +324,9 @@ where
 
         self.totalCost -= container.cost
 
+        #if DEBUG
         assert(self.isValid())
+        #endif
 
         return container.element
     }
@@ -333,21 +339,25 @@ where
         }
     }
 
+    #if DEBUG
     internal func isValid() -> Bool {
-        let indexCount = self.indicesByKey.count
-        let elementCount = self.elementsByIndex.count
-        let policyIndexCount = self.policy.count
-
-        guard indexCount == policyIndexCount else {
-            return false
+        guard shouldValidate else {
+            return true
         }
 
-        guard elementCount == policyIndexCount else {
+        let uniqueCounts: Set<Int> = [
+            self.indicesByKey.count,
+            self.elementsByIndex.count,
+            self.policy.count,
+        ]
+
+        guard uniqueCounts.count == 1 else {
             return false
         }
 
         return true
     }
+    #endif
 }
 
 extension CustomCache: Equatable
