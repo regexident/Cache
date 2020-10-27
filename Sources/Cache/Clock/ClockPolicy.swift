@@ -110,6 +110,15 @@ where
         logger.trace("\(type(of: self)).\(#function)")
         self.logState(to: logger)
 
+        defer {
+            self.logState(to: logger)
+            logger.trace("")
+
+            #if DEBUG
+            assert(self.isValid())
+            #endif
+        }
+
         if self.isFull {
             self.blocks.append(.init())
         }
@@ -155,32 +164,42 @@ where
         self.cursors.insert = index.advanced(by: 1)
         self.count += 1
 
-        self.logState(to: logger)
-        logger.trace("")
-
-        #if DEBUG
-        assert(self.isValid())
-        #endif
-
         return index
     }
 
     public mutating func use(_ index: Index) {
+        logger.trace("\(type(of: self)).\(#function)")
+        self.logState(to: logger)
+
+        defer {
+            self.logState(to: logger)
+            logger.trace("")
+
+            #if DEBUG
+            assert(self.isValid())
+            #endif
+        }
+
         let (chunkIndex, bitIndex) = index.indices(given: Bits.self)
         let indexMask = Chunk.mask(index: bitIndex)
 
         assert(self.blocks[chunkIndex].isOccupied(mask: indexMask))
 
         self.blocks[chunkIndex].reference(mask: indexMask)
-
-        #if DEBUG
-        assert(self.isValid())
-        #endif
     }
 
     public mutating func remove() -> Index? {
         logger.trace("\(type(of: self)).\(#function)")
         self.logState(to: logger)
+
+        defer {
+            self.logState(to: logger)
+            logger.trace("")
+
+            #if DEBUG
+            assert(self.isValid())
+            #endif
+        }
 
         let chunkCount = self.blocks.count
 
@@ -225,18 +244,22 @@ where
         self.cursors.remove = index.advanced(by: 1)
         self.count -= 1
 
-        self.logState(to: logger)
-
-        logger.trace("")
-
-        #if DEBUG
-        assert(self.isValid())
-        #endif
-
         return index
     }
 
     public mutating func remove(_ index: Index) {
+        logger.trace("\(type(of: self)).\(#function)")
+        self.logState(to: logger)
+
+        defer {
+            self.logState(to: logger)
+            logger.trace("")
+
+            #if DEBUG
+            assert(self.isValid())
+            #endif
+        }
+
         let (chunkIndex, bitIndex) = index.indices(given: Bits.self)
         let indexMask = Chunk.mask(index: bitIndex)
 
@@ -245,10 +268,6 @@ where
         self.blocks[chunkIndex].evict(mask: indexMask)
 
         self.count -= 1
-
-        #if DEBUG
-        assert(self.isValid())
-        #endif
     }
 
     public mutating func removeAll() {
@@ -258,13 +277,21 @@ where
     public mutating func removeAll(
         keepingCapacity keepCapacity: Bool
     ) {
+        logger.trace("\(type(of: self)).\(#function)")
+        self.logState(to: logger)
+
+        defer {
+            self.logState(to: logger)
+            logger.trace("")
+
+            #if DEBUG
+            assert(self.isValid())
+            #endif
+        }
+
         self.count = 0
         self.blocks.removeAll(keepingCapacity: keepCapacity)
         self.cursors = .init()
-
-        #if DEBUG
-        assert(self.isValid())
-        #endif
     }
 
     //                           ┌ startIndex

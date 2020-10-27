@@ -2,6 +2,8 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
+import Logging
+
 public typealias RrCache<Key, Value> = CustomRrCache<Key, Value, Int, UInt64>
 where
     Key: Hashable
@@ -75,6 +77,18 @@ where
     }
 
     public mutating func insert() -> Index {
+        logger.trace("\(type(of: self)).\(#function)")
+        self.logState(to: logger)
+
+        defer {
+            self.logState(to: logger)
+            logger.trace("")
+
+            #if DEBUG
+            assert(self.isValid())
+            #endif
+        }
+
         if self.count == self.chunks.count * Chunk.bitWidth {
             self.chunks.append(.init())
         }
@@ -109,18 +123,28 @@ where
         let index = Self.index(chunk: chunkIndex, bit: endBitIndex)
         self.count += 1
 
-        #if DEBUG
-        assert(self.isValid())
-        #endif
-
         return index
     }
 
     public mutating func use(_ index: Index) {
+        logger.trace("\(type(of: self)).\(#function)")
+
         // ignored
     }
 
     public mutating func remove() -> Index? {
+        logger.trace("\(type(of: self)).\(#function)")
+        self.logState(to: logger)
+
+        defer {
+            self.logState(to: logger)
+            logger.trace("")
+
+            #if DEBUG
+            assert(self.isValid())
+            #endif
+        }
+
         let startIndex = self.randomStartIndex()
         var (chunkIndex, startBitIndex) = startIndex.indices(
             given: Bits.self
@@ -151,22 +175,26 @@ where
         let index = Self.index(chunk: chunkIndex, bit: endBitIndex)
         self.count -= 1
 
-        #if DEBUG
-        assert(self.isValid())
-        #endif
-
         return index
     }
 
     public mutating func remove(_ index: Index) {
+        logger.trace("\(type(of: self)).\(#function)")
+        self.logState(to: logger)
+
+        defer {
+            self.logState(to: logger)
+            logger.trace("")
+
+            #if DEBUG
+            assert(self.isValid())
+            #endif
+        }
+
         let (chunkIndex, bitIndex) = index.indices(given: Bits.self)
         let mask = Chunk.mask(index: bitIndex)
         self.chunks[chunkIndex].setZeros(atMask: mask)
         self.count -= 1
-
-        #if DEBUG
-        assert(self.isValid())
-        #endif
     }
 
     @inlinable
@@ -178,12 +206,20 @@ where
     public mutating func removeAll(
         keepingCapacity keepCapacity: Bool
     ) {
+        logger.trace("\(type(of: self)).\(#function)")
+        self.logState(to: logger)
+
+        defer {
+            self.logState(to: logger)
+            logger.trace("")
+
+            #if DEBUG
+            assert(self.isValid())
+            #endif
+        }
+
         self.count = 0
         self.chunks.removeAll(keepingCapacity: keepCapacity)
-
-        #if DEBUG
-        assert(self.isValid())
-        #endif
     }
 
     private static func chunksFor(count: Int) -> Int {
@@ -207,6 +243,21 @@ where
         let count = self.count
         let index = (count != 0) ? (int % count) : 0
         return .init(absoluteBitIndex: index)
+    }
+
+    private func logState(to logger: Logger = logger) {
+        guard logger.logLevel <= .trace else {
+            return
+        }
+
+        let chunks = self.chunks.lazy.map {
+            $0.bits
+        }.map {
+            "\($0, radix: .binary, toWidth: Bits.bitWidth)"
+        }.joined(separator: ", ")
+
+        logger.trace("count: \(count)")
+        logger.trace("chunks:   [\(chunks)]")
     }
 
     #if DEBUG
