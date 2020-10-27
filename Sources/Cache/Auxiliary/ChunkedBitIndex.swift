@@ -49,8 +49,8 @@ public struct ChunkedBitIndex {
 
         assert(Self.isPowerOfTwo(Chunk.bitWidth))
 
-        let bitsPerBitIndex = Self.bitsPerBitIndex(given: chunkType)
-        let bitIndexMask: Int = ((0b1 as Int) << bitsPerBitIndex) - 1
+        let bitIndexMask = Chunk.bitWidth - 1
+        let bitsPerBitIndex = bitIndexMask.nonzeroBitCount
 
         let msb = Int(chunkIndex) << bitsPerBitIndex
         let lsb = Int(bitIndex) & bitIndexMask
@@ -59,47 +59,6 @@ public struct ChunkedBitIndex {
         assert(absoluteBitIndex >= 0)
 
         self._absoluteBitIndex = .init(absoluteBitIndex)
-    }
-
-    internal func chunkIndex<Chunk>(
-        given chunkType: Chunk.Type
-    ) -> Int
-    where
-        Chunk: FixedWidthInteger & UnsignedInteger
-    {
-        // Important:
-        //
-        // The arithmetic of this method, which basically implements
-        // (or assists in implementing) a highly optimal equivalent
-        // of `%` and its inverse, requires `Chunk.bitWidth` to be
-        // a power of two to produce correct results.
-
-        assert(Self.isPowerOfTwo(Chunk.bitWidth))
-
-        let bitsPerBitIndex = Self.bitsPerBitIndex(given: chunkType)
-
-        return self.absoluteBitIndex >> bitsPerBitIndex
-    }
-
-    internal func bitIndex<Chunk>(
-        given chunkType: Chunk.Type
-    ) -> Int
-    where
-        Chunk: FixedWidthInteger & UnsignedInteger
-    {
-        // Important:
-        //
-        // The arithmetic of this method, which basically implements
-        // (or assists in implementing) a highly optimal equivalent
-        // of `%` and its inverse, requires `Chunk.bitWidth` to be
-        // a power of two to produce correct results.
-
-        assert(Self.isPowerOfTwo(Chunk.bitWidth))
-
-        let bitsPerBitIndex = Self.bitsPerBitIndex(given: chunkType)
-        let mask: Int = ((0b1 as Int) << bitsPerBitIndex) - 1
-
-        return self.absoluteBitIndex & mask
     }
 
     internal func indices<Chunk>(
@@ -117,8 +76,8 @@ public struct ChunkedBitIndex {
 
         assert(Self.isPowerOfTwo(Chunk.bitWidth))
 
-        let bitIndexMask = Self.bitIndexMask(given: chunkType)
-        let bitsPerBitIndex = Int(bitIndexMask + 1)
+        let bitIndexMask = Chunk.bitWidth - 1
+        let bitsPerBitIndex = bitIndexMask.nonzeroBitCount
 
         let chunkIndex = self.absoluteBitIndex >> bitsPerBitIndex
         let bitIndex = self.absoluteBitIndex & bitIndexMask
@@ -134,45 +93,6 @@ public struct ChunkedBitIndex {
 
     internal mutating func advance(by distance: Int) {
         self.absoluteBitIndex += distance
-    }
-
-    internal static func bitsPerBitIndex<Chunk>(
-        given chunkType: Chunk.Type
-    ) -> Int
-    where
-        Chunk: FixedWidthInteger & UnsignedInteger
-    {
-        // Important:
-        //
-        // The arithmetic of this method, which basically implements
-        // (or assists in implementing) a highly optimal equivalent
-        // of `%` and its inverse, requires `Chunk.bitWidth` to be
-        // a power of two to produce correct results.
-
-        assert(self.isPowerOfTwo(Chunk.bitWidth))
-
-        let bitIndexMask = UInt(Self.bitIndexMask(given: chunkType))
-        let bitsPerBitIndex = bitIndexMask.nonzeroBitCount
-        return bitsPerBitIndex
-    }
-
-    internal static func bitIndexMask<Chunk>(
-        given chunkType: Chunk.Type
-    ) -> Int
-    where
-        Chunk: FixedWidthInteger & UnsignedInteger
-    {
-        // Important:
-        //
-        // The arithmetic of this method, which basically implements
-        // (or assists in implementing) a highly optimal equivalent
-        // of `%` and its inverse, requires `Chunk.bitWidth` to be
-        // a power of two to produce correct results.
-
-        assert(self.isPowerOfTwo(Chunk.bitWidth))
-
-        let bitIndexMask = Chunk.bitWidth - 1
-        return bitIndexMask
     }
 
     private static func isPowerOfTwo(_ number: Int) -> Bool {

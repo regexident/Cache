@@ -40,6 +40,14 @@ where
         self.bits = bits
     }
 
+    internal static func emptyRange() -> Range<Int> {
+        0..<0
+    }
+
+    internal static func fullRange() -> Range<Int> {
+        0..<Bits.bitWidth
+    }
+
     internal static func emptyMask() -> Bits {
         (0b0 as Bits)
     }
