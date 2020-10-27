@@ -85,7 +85,7 @@ where
             logger.trace("")
 
             #if DEBUG
-            assert(self.isValid())
+            assert(self.isValid() != false)
             #endif
         }
 
@@ -141,7 +141,7 @@ where
             logger.trace("")
 
             #if DEBUG
-            assert(self.isValid())
+            assert(self.isValid() != false)
             #endif
         }
 
@@ -187,7 +187,7 @@ where
             logger.trace("")
 
             #if DEBUG
-            assert(self.isValid())
+            assert(self.isValid() != false)
             #endif
         }
 
@@ -214,7 +214,7 @@ where
             logger.trace("")
 
             #if DEBUG
-            assert(self.isValid())
+            assert(self.isValid() != false)
             #endif
         }
 
@@ -261,7 +261,7 @@ where
     }
 
     #if DEBUG
-    internal func isValid() -> Bool {
+    internal func isValid() -> Bool? {
         let validCount = self.chunks.reduce(0) {
             $0 + $1.count
         } == self.count
