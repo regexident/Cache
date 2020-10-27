@@ -118,7 +118,7 @@ public struct CustomLruPolicy: CachePolicy {
             logger.trace("")
 
             #if DEBUG
-            assert(self.isValid())
+            assert(self.isValid() != false)
             #endif
         }
 
@@ -167,7 +167,7 @@ public struct CustomLruPolicy: CachePolicy {
             logger.trace("")
 
             #if DEBUG
-            assert(self.isValid())
+            assert(self.isValid() != false)
             #endif
         }
 
@@ -191,7 +191,7 @@ public struct CustomLruPolicy: CachePolicy {
             logger.trace("")
 
             #if DEBUG
-            assert(self.isValid())
+            assert(self.isValid() != false)
             #endif
         }
 
@@ -213,7 +213,7 @@ public struct CustomLruPolicy: CachePolicy {
             logger.trace("")
 
             #if DEBUG
-            assert(self.isValid())
+            assert(self.isValid() != false)
             #endif
         }
 
@@ -274,7 +274,7 @@ public struct CustomLruPolicy: CachePolicy {
             logger.trace("")
 
             #if DEBUG
-            assert(self.isValid())
+            assert(self.isValid() != false)
             #endif
         }
 
@@ -319,7 +319,7 @@ public struct CustomLruPolicy: CachePolicy {
 
         let count = self.count
         let head = self.head.map { String(describing: $0) } ?? "nil"
-            let tail = self.tail.map { String(describing: $0) } ?? "nil"
+        let tail = self.tail.map { String(describing: $0) } ?? "nil"
 
         logger.trace("count: \(count)")
         logger.trace("head: \(head)")
@@ -327,9 +327,9 @@ public struct CustomLruPolicy: CachePolicy {
     }
 
     #if DEBUG
-    internal func isValid() -> Bool {
+    internal func isValid() -> Bool? {
         guard shouldValidate else {
-            return true
+            return nil
         }
 
         var visitedFree: Set<Index> = []

@@ -97,9 +97,9 @@ where
     }
 
     #if DEBUG
-    internal func isValid() -> Bool {
+    internal func isValid() -> Bool? {
         guard shouldValidate else {
-            return true
+            return nil
         }
 
         let occupied = self.occupied.bits
