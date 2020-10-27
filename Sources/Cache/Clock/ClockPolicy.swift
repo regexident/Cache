@@ -360,6 +360,7 @@ where
         logger.trace("referenced: [\(referenced)]")
     }
 
+    #if DEBUG
     internal func isValid() -> Bool? {
         guard shouldValidate else {
             return nil
@@ -380,4 +381,5 @@ where
 
         return true
     }
+    #endif
 }
