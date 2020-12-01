@@ -77,6 +77,7 @@ where
     }
 
     public mutating func insert() -> Index {
+        #if DEBUG
         logger.trace("\(type(of: self)).\(#function)")
         self.logState(to: logger)
 
@@ -84,10 +85,9 @@ where
             self.logState(to: logger)
             logger.trace("")
 
-            #if DEBUG
             assert(self.isValid() != false)
-            #endif
         }
+        #endif
 
         if self.count == self.chunks.count * Chunk.bitWidth {
             self.chunks.append(.init())
@@ -133,6 +133,7 @@ where
     }
 
     public mutating func remove() -> Index? {
+        #if DEBUG
         logger.trace("\(type(of: self)).\(#function)")
         self.logState(to: logger)
 
@@ -140,10 +141,9 @@ where
             self.logState(to: logger)
             logger.trace("")
 
-            #if DEBUG
             assert(self.isValid() != false)
-            #endif
         }
+        #endif
 
         let startIndex = self.randomStartIndex()
         var (chunkIndex, startBitIndex) = startIndex.indices(
@@ -179,6 +179,7 @@ where
     }
 
     public mutating func remove(_ index: Index) {
+        #if DEBUG
         logger.trace("\(type(of: self)).\(#function)")
         self.logState(to: logger)
 
@@ -186,10 +187,9 @@ where
             self.logState(to: logger)
             logger.trace("")
 
-            #if DEBUG
             assert(self.isValid() != false)
-            #endif
         }
+        #endif
 
         let (chunkIndex, bitIndex) = index.indices(given: Bits.self)
         let mask = Chunk.mask(index: bitIndex)
@@ -206,6 +206,7 @@ where
     public mutating func removeAll(
         keepingCapacity keepCapacity: Bool
     ) {
+        #if DEBUG
         logger.trace("\(type(of: self)).\(#function)")
         self.logState(to: logger)
 
@@ -213,10 +214,9 @@ where
             self.logState(to: logger)
             logger.trace("")
 
-            #if DEBUG
             assert(self.isValid() != false)
-            #endif
         }
+        #endif
 
         self.count = 0
         self.chunks.removeAll(keepingCapacity: keepCapacity)

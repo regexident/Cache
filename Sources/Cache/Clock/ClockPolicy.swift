@@ -107,6 +107,7 @@ where
     }
 
     public mutating func insert() -> Index {
+        #if DEBUG
         logger.trace("\(type(of: self)).\(#function)")
         self.logState(to: logger)
 
@@ -114,10 +115,9 @@ where
             self.logState(to: logger)
             logger.trace("")
 
-            #if DEBUG
             assert(self.isValid() != false)
-            #endif
         }
+        #endif
 
         if self.isFull {
             self.blocks.append(.init())
@@ -134,20 +134,23 @@ where
         var didFindVictim: Bool = false
 
         let chunkOffsetRange = 0..<chunkCount
-        for chunkOffset in chunkOffsetRange {
-            chunkIndex = (chunkCursor + chunkOffset) % chunkCount
-            let range = self.rangeForChunk(
-                at: chunkOffset,
-                in: chunkOffsetRange,
-                cursor: bitCursor
-            )
+        // We manually ensure array bounds, thus avoid checks:
+        self.blocks.withUnsafeMutableBufferPointer { blocks in
+            for chunkOffset in chunkOffsetRange {
+                chunkIndex = (chunkCursor + chunkOffset) % chunkCount
+                let range = Self.rangeForChunk(
+                    at: chunkOffset,
+                    in: chunkOffsetRange,
+                    cursor: bitCursor
+                )
 
-            if let index = self.blocks[chunkIndex].indexOfFirstUnnoccupied(
-                range: range
-            ) {
-                bitIndex = index
-                didFindVictim = true
-                break
+                if let index = blocks[chunkIndex].indexOfFirstUnnoccupied(
+                    range: range
+                ) {
+                    bitIndex = index
+                    didFindVictim = true
+                    break
+                }
             }
         }
 
@@ -168,6 +171,7 @@ where
     }
 
     public mutating func use(_ index: Index) {
+        #if DEBUG
         logger.trace("\(type(of: self)).\(#function)")
         self.logState(to: logger)
 
@@ -175,10 +179,9 @@ where
             self.logState(to: logger)
             logger.trace("")
 
-            #if DEBUG
             assert(self.isValid() != false)
-            #endif
         }
+        #endif
 
         let (chunkIndex, bitIndex) = index.indices(given: Bits.self)
         let indexMask = Chunk.mask(index: bitIndex)
@@ -189,6 +192,7 @@ where
     }
 
     public mutating func remove() -> Index? {
+        #if DEBUG
         logger.trace("\(type(of: self)).\(#function)")
         self.logState(to: logger)
 
@@ -196,10 +200,9 @@ where
             self.logState(to: logger)
             logger.trace("")
 
-            #if DEBUG
             assert(self.isValid() != false)
-            #endif
         }
+        #endif
 
         let chunkCount = self.blocks.count
 
@@ -212,24 +215,27 @@ where
         var didFindVictim: Bool = false
 
         let chunkOffsetRange = 0..<(chunkCount + 1)
-        for chunkOffset in chunkOffsetRange {
-            chunkIndex = (chunkCursor + chunkOffset) % chunkCount
-            let range = self.rangeForChunk(
-                at: chunkOffset,
-                in: chunkOffsetRange,
-                cursor: bitCursor
-            )
-            let mask = Chunk.mask(range: range)
-            if let index = self.blocks[chunkIndex].indexOfFirstUnreferenced(
-                range: range
-            ) {
-                bitIndex = index
-                let mask = Chunk.mask(range: (range.lowerBound)...index)
-                self.blocks[chunkIndex].dereference(mask: mask)
-                didFindVictim = true
-                break
+        // We manually ensure array bounds, thus avoid checks:
+        self.blocks.withUnsafeMutableBufferPointer { blocks in
+            for chunkOffset in chunkOffsetRange {
+                chunkIndex = (chunkCursor + chunkOffset) % chunkCount
+                let range = Self.rangeForChunk(
+                    at: chunkOffset,
+                    in: chunkOffsetRange,
+                    cursor: bitCursor
+                )
+                let mask = Chunk.mask(range: range)
+                if let index = blocks[chunkIndex].indexOfFirstUnreferenced(
+                    range: range
+                ) {
+                    bitIndex = index
+                    let mask = Chunk.mask(range: (range.lowerBound)...index)
+                    blocks[chunkIndex].dereference(mask: mask)
+                    didFindVictim = true
+                    break
+                }
+                blocks[chunkIndex].dereference(mask: mask)
             }
-            self.blocks[chunkIndex].dereference(mask: mask)
         }
 
         assert(didFindVictim)
@@ -248,6 +254,7 @@ where
     }
 
     public mutating func remove(_ index: Index) {
+        #if DEBUG
         logger.trace("\(type(of: self)).\(#function)")
         self.logState(to: logger)
 
@@ -255,10 +262,9 @@ where
             self.logState(to: logger)
             logger.trace("")
 
-            #if DEBUG
             assert(self.isValid() != false)
-            #endif
         }
+        #endif
 
         let (chunkIndex, bitIndex) = index.indices(given: Bits.self)
         let indexMask = Chunk.mask(index: bitIndex)
@@ -277,6 +283,7 @@ where
     public mutating func removeAll(
         keepingCapacity keepCapacity: Bool
     ) {
+        #if DEBUG
         logger.trace("\(type(of: self)).\(#function)")
         self.logState(to: logger)
 
@@ -284,10 +291,9 @@ where
             self.logState(to: logger)
             logger.trace("")
 
-            #if DEBUG
             assert(self.isValid() != false)
-            #endif
         }
+        #endif
 
         self.count = 0
         self.blocks.removeAll(keepingCapacity: keepCapacity)
@@ -306,7 +312,7 @@ where
     //         │ │          │ └─┘      │          │          │ │
     //         │ └──────────┴──────────┴──────────┴──────────┘ │
     //         └───────────────────────────────────────────────┘
-    private func rangeForChunk(
+    private static func rangeForChunk(
         at index: Int,
         in range: Range<Int>,
         cursor: Int
