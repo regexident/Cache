@@ -8,25 +8,36 @@ where
 {
     public typealias Chunk = BitChunk<Bits>
 
+    @inlinable
+    @inline(__always)
     internal var unoccupied: Chunk {
         let bits = ~self.occupied.bits
         return .init(bits: bits)
     }
 
+    @inlinable
+    @inline(__always)
     internal var unreferenced: Chunk {
         let bits = self.occupied.bits & ~self.referenced.bits
         return .init(bits: bits)
     }
 
+    @inline(__always)
     internal var occupied: Chunk = .init()
+
+    @inline(__always)
     internal var referenced: Chunk = .init()
 
+    @inlinable
+    @inline(__always)
     internal mutating func occupy(
         mask: Bits
     ) {
         self.occupied.setOnes(atMask: mask)
     }
 
+    @inlinable
+    @inline(__always)
     internal mutating func evict(
         mask: Bits
     ) {
@@ -34,24 +45,32 @@ where
         self.referenced.setZeros(atMask: mask)
     }
 
+    @inlinable
+    @inline(__always)
     internal mutating func reference(
         mask: Bits
     ) {
         self.referenced.setOnes(atMask: mask)
     }
 
+    @inlinable
+    @inline(__always)
     internal mutating func dereference(
         mask: Bits
     ) {
         self.referenced.setZeros(atMask: mask)
     }
 
+    @inlinable
+    @inline(__always)
     internal mutating func isOccupied(
         mask: Bits
     ) -> Bool {
         self.occupied.isOnes(atMask: mask)
     }
 
+    @inlinable
+    @inline(__always)
     internal mutating func isVacant(
         mask: Bits
     ) -> Bool {
@@ -64,18 +83,24 @@ where
         return true
     }
 
+    @inlinable
+    @inline(__always)
     internal mutating func isReferenced(
         mask: Bits
     ) -> Bool {
         self.referenced.isOnes(atMask: mask)
     }
 
+    @inlinable
+    @inline(__always)
     internal mutating func isUnreferenced(
         mask: Bits
     ) -> Bool {
         self.unreferenced.isOnes(atMask: mask)
     }
 
+    @inlinable
+    @inline(__always)
     internal func indexOfFirstUnnoccupied(
         range: Range<Int>
     ) -> Int? {
@@ -86,6 +111,8 @@ where
         return bits.indexOfFirstOne(inRange: range)
     }
 
+    @inlinable
+    @inline(__always)
     internal func indexOfFirstUnreferenced(
         range: Range<Int>
     ) -> Int? {
