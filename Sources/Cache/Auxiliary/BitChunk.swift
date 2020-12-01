@@ -59,7 +59,8 @@ where
     internal static func mask(
         index: Int
     ) -> Bits {
-        (0b1 as Bits) << index
+        assert(index < Bits.bitWidth)
+        return (0b1 as Bits) &<< index
     }
 
     internal static func mask(
@@ -90,7 +91,8 @@ where
         range: PartialRangeFrom<Int>
     ) -> Bits {
         let offset = range.lowerBound
-        let bits = self.fullMask() << offset
+        assert(offset < Bits.bitWidth)
+        let bits = self.fullMask() &<< offset
         return bits
     }
 
@@ -98,7 +100,8 @@ where
         range: PartialRangeUpTo<Int>
     ) -> Bits {
         let offset = Bits.bitWidth - range.upperBound
-        let bits = self.fullMask() >> offset
+        assert(offset < Bits.bitWidth)
+        let bits = self.fullMask() &>> offset
         return bits
     }
 
