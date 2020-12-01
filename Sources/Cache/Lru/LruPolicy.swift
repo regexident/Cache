@@ -4,33 +4,24 @@
 
 import Logging
 
-public typealias LruCache<Key, Value> = CustomLruCache<Key, Value, Int>
+public typealias LruCache<Key, Value> = CustomLruCache<Key, Value, Int, Int>
 where
     Key: Hashable
 
-public typealias CustomLruCache<Key, Value, Cost> = CustomCache<Key, Value, Cost, CustomLruPolicy>
+public typealias CustomLruCache<Key, Value, Cost, Index> = CustomCache<Key, Value, Cost, CustomLruPolicy<Index>>
 where
     Key: Hashable,
-    Cost: Comparable & Numeric
+    Cost: Comparable & Numeric,
+    Index: BinaryInteger
 
 public typealias LruPolicy = CustomLruPolicy;
 
-public struct CustomLruPolicy: CachePolicy {
-    public typealias Index = LruIndex
-
-    internal enum Node: Equatable {
-        internal struct Free: Equatable {
-            var nextFree: Index?
-        }
-
-        internal struct Occupied: Equatable {
-            var previous: Index?
-            var next: Index?
-        }
-
-        case free(Free)
-        case occupied(Occupied)
-    }
+public struct CustomLruPolicy<RawIndex>: CachePolicy
+where
+    RawIndex: BinaryInteger
+{
+    public typealias Index = LruIndex<RawIndex>
+    internal typealias Node = LruNode<RawIndex>
 
     public var isEmpty: Bool {
         self.count == 0
@@ -42,10 +33,10 @@ public struct CustomLruPolicy: CachePolicy {
         self.nodes.capacity
     }
 
-    internal private(set) var head: Index?
-    internal private(set) var tail: Index?
+    internal private(set) var head: RawIndex?
+    internal private(set) var tail: RawIndex?
     internal private(set) var nodes: [Node]
-    internal private(set) var firstFree: Index?
+    internal private(set) var firstFree: RawIndex?
 
     /// Creates an empty cache policy with no preallocated space.
     public init() {
@@ -82,7 +73,7 @@ public struct CustomLruPolicy: CachePolicy {
             tail: nil,
             nodes: (0..<capacity).map { index in
                 let nextIndex = index + 1
-                let nextFree: Index?
+                let nextFree: RawIndex?
                 if nextIndex < capacity {
                     nextFree = .init(nextIndex)
                 } else {
@@ -96,10 +87,10 @@ public struct CustomLruPolicy: CachePolicy {
     }
 
     internal init(
-        head: Index?,
-        tail: Index?,
+        head: RawIndex?,
+        tail: RawIndex?,
         nodes: [Node],
-        firstFree: Index?,
+        firstFree: RawIndex?,
         count: Int
     ) {
         self.head = head
@@ -130,7 +121,7 @@ public struct CustomLruPolicy: CachePolicy {
         let index = self.firstFree!
         let currentHead = self.head
 
-        let free: Index? = self.modifyNode(at: index) { node in
+        let free: RawIndex? = self.modifyNode(at: index) { node in
             guard case .free(let free) = node else {
                 fatalError("Expected free lot, found occupied.")
             }
@@ -155,7 +146,7 @@ public struct CustomLruPolicy: CachePolicy {
         self.firstFree = free
         self.count += 1
 
-        return index
+        return .init(index)
     }
 
     public mutating func use(_ index: Index) {
@@ -171,7 +162,7 @@ public struct CustomLruPolicy: CachePolicy {
         }
         #endif
 
-        guard self.head != index else {
+        guard self.head != index.value else {
             return
         }
 
@@ -195,9 +186,11 @@ public struct CustomLruPolicy: CachePolicy {
         }
         #endif
 
-        guard let index = self.tail else {
+        guard let rawIndex = self.tail else {
             return nil
         }
+
+        let index = Index(rawIndex)
 
         self.remove(index)
 
@@ -217,7 +210,9 @@ public struct CustomLruPolicy: CachePolicy {
         }
         #endif
 
-        let nodeOrNil: Node.Occupied? = self.modifyNode(at: index) { node in
+        let rawIndex = index.value
+
+        let nodeOrNil: Node.Occupied? = self.modifyNode(at: rawIndex) { node in
             switch node {
             case .free(_):
                 return nil
@@ -231,29 +226,29 @@ public struct CustomLruPolicy: CachePolicy {
             return
         }
 
-        if self.head == index {
+        if self.head == index.value {
             self.head = node.next
         }
 
-        if self.tail == index {
+        if self.tail == index.value {
             self.tail = node.previous
         }
 
         if let previousIndex = node.previous {
             self.modifyOccupiedNode(at: previousIndex) { occupied in
-                assert(occupied.next == index)
+                assert(occupied.next == rawIndex)
                 occupied.next = node.next
             }
         }
         if let nextIndex = node.next {
             self.modifyOccupiedNode(at: nextIndex) { occupied in
-                assert(occupied.previous == index)
+                assert(occupied.previous == rawIndex)
                 occupied.previous = node.previous
             }
         }
 
-        self.nodes[index.value] = .free(.init(nextFree: self.firstFree))
-        self.firstFree = index
+        self.nodes[Int(rawIndex)] = .free(.init(nextFree: self.firstFree))
+        self.firstFree = rawIndex
         self.count -= 1
     }
 
@@ -287,7 +282,7 @@ public struct CustomLruPolicy: CachePolicy {
     }
 
     private mutating func modifyOccupiedNode<T>(
-        at index: Index,
+        at index: RawIndex,
         _ closure: (inout Node.Occupied) -> T
     ) -> T {
         self.modifyNode(at: index) { node in
@@ -304,10 +299,10 @@ public struct CustomLruPolicy: CachePolicy {
     }
 
     private mutating func modifyNode<T>(
-        at index: Index,
+        at index: RawIndex,
         _ closure: (inout Node) -> T
     ) -> T {
-        self.nodes.modifyElement(at: index.value) { node in
+        self.nodes.modifyElement(at: Int(index)) { node in
             return closure(&node)
         }
     }
@@ -335,18 +330,20 @@ public struct CustomLruPolicy: CachePolicy {
         var visitedFree: Set<Index> = []
         var visitedOccupied: Set<Index> = []
 
-        var currentIndex: Index? = self.head
-        var previousIndex: Index? = nil
+        var currentIndex: RawIndex? = self.head
+        var previousIndex: RawIndex? = nil
 
         // Walk linked list:
 
-        while let index = currentIndex {
-            let node = self.nodes[index.value]
+        while let rawIndex = currentIndex {
+            let index = Int(rawIndex)
+
+            let node = self.nodes[index]
             guard case .occupied(let occupied) = node else {
                 return false
             }
 
-            visitedOccupied.insert(index)
+            visitedOccupied.insert(.init(rawIndex))
 
             if currentIndex == self.head {
                 // No node before head:
@@ -373,13 +370,15 @@ public struct CustomLruPolicy: CachePolicy {
 
         currentIndex = self.firstFree
 
-        while let index = currentIndex {
-            let node = self.nodes[index.value]
+        while let rawIndex = currentIndex {
+            let index = Int(rawIndex)
+
+            let node = self.nodes[index]
             guard case .free(let free) = node else {
                 return false
             }
 
-            visitedFree.insert(index)
+            visitedFree.insert(.init(rawIndex))
 
             previousIndex = currentIndex
             currentIndex = free.nextFree

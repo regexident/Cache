@@ -3,7 +3,7 @@ import XCTest
 @testable import Cache
 
 final class LruPolicyTests: XCTestCase {
-    typealias Policy = CustomLruPolicy
+    typealias Policy = CustomLruPolicy<Int>
     typealias Index = Policy.Index
 
     func policy(
@@ -32,8 +32,8 @@ final class LruPolicyTests: XCTestCase {
 
         let head = policy.insert()
 
-        XCTAssertEqual(policy.head, head)
-        XCTAssertEqual(policy.tail, head)
+        XCTAssertEqual(policy.head, head.value)
+        XCTAssertEqual(policy.tail, head.value)
         XCTAssertEqual(policy.nodes, [
             .occupied(.init(previous: nil, next: nil)),
         ])
@@ -41,8 +41,8 @@ final class LruPolicyTests: XCTestCase {
 
         let newHead = policy.insert()
 
-        XCTAssertEqual(policy.head, newHead)
-        XCTAssertEqual(policy.tail, head)
+        XCTAssertEqual(policy.head, newHead.value)
+        XCTAssertEqual(policy.tail, head.value)
         XCTAssertEqual(policy.nodes, [
             .occupied(.init(previous: 1, next: nil)),
             .occupied(.init(previous: nil, next: 0)),
