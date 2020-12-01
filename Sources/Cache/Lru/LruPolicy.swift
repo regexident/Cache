@@ -110,6 +110,7 @@ public struct CustomLruPolicy: CachePolicy {
     }
 
     public mutating func insert() -> Index {
+        #if DEBUG
         logger.trace("\(type(of: self)).\(#function)")
         self.logState(to: logger)
 
@@ -117,10 +118,9 @@ public struct CustomLruPolicy: CachePolicy {
             self.logState(to: logger)
             logger.trace("")
 
-            #if DEBUG
             assert(self.isValid() != false)
-            #endif
         }
+        #endif
 
         if self.firstFree == nil {
             self.firstFree = .init(self.nodes.count)
@@ -159,6 +159,7 @@ public struct CustomLruPolicy: CachePolicy {
     }
 
     public mutating func use(_ index: Index) {
+        #if DEBUG
         logger.trace("\(type(of: self)).\(#function)")
         self.logState(to: logger)
 
@@ -166,10 +167,9 @@ public struct CustomLruPolicy: CachePolicy {
             self.logState(to: logger)
             logger.trace("")
 
-            #if DEBUG
             assert(self.isValid() != false)
-            #endif
         }
+        #endif
 
         guard self.head != index else {
             return
@@ -183,6 +183,7 @@ public struct CustomLruPolicy: CachePolicy {
     }
 
     public mutating func remove() -> Index? {
+        #if DEBUG
         logger.trace("\(type(of: self)).\(#function)")
         self.logState(to: logger)
 
@@ -190,10 +191,9 @@ public struct CustomLruPolicy: CachePolicy {
             self.logState(to: logger)
             logger.trace("")
 
-            #if DEBUG
             assert(self.isValid() != false)
-            #endif
         }
+        #endif
 
         guard let index = self.tail else {
             return nil
@@ -205,6 +205,7 @@ public struct CustomLruPolicy: CachePolicy {
     }
 
     public mutating func remove(_ index: Index) {
+        #if DEBUG
         logger.trace("\(type(of: self)).\(#function)")
         self.logState(to: logger)
 
@@ -212,10 +213,9 @@ public struct CustomLruPolicy: CachePolicy {
             self.logState(to: logger)
             logger.trace("")
 
-            #if DEBUG
             assert(self.isValid() != false)
-            #endif
         }
+        #endif
 
         let nodeOrNil: Node.Occupied? = self.modifyNode(at: index) { node in
             switch node {
@@ -266,6 +266,7 @@ public struct CustomLruPolicy: CachePolicy {
     public mutating func removeAll(
         keepingCapacity keepCapacity: Bool
     ) {
+        #if DEBUG
         logger.trace("\(type(of: self)).\(#function)")
         self.logState(to: logger)
 
@@ -273,10 +274,9 @@ public struct CustomLruPolicy: CachePolicy {
             self.logState(to: logger)
             logger.trace("")
 
-            #if DEBUG
             assert(self.isValid() != false)
-            #endif
         }
+        #endif
 
         self.head = nil
         self.tail = nil
