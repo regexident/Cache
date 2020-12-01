@@ -2,15 +2,18 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-public struct LruIndex {
-    internal let value: Int
+public struct LruIndex<RawIndex> {
+    internal let value: RawIndex
 
-    internal init(_ value: Int) {
+    internal init(_ value: RawIndex) {
         self.value = value
     }
 }
 
-extension LruIndex: Equatable {
+extension LruIndex: Equatable
+where
+    RawIndex: Equatable
+{
     public static func == (
         lhs: Self,
         rhs: Self
@@ -19,7 +22,10 @@ extension LruIndex: Equatable {
     }
 }
 
-extension LruIndex: Hashable {
+extension LruIndex: Hashable
+where
+    RawIndex: Hashable
+{
     public func hash(into hasher: inout Hasher) {
         self.value.hash(into: &hasher)
     }
@@ -31,12 +37,15 @@ extension LruIndex: CustomStringConvertible {
     }
 }
 
-extension LruIndex: ExpressibleByIntegerLiteral {
+extension LruIndex: ExpressibleByIntegerLiteral
+where
+    RawIndex: BinaryInteger
+{
     public typealias IntegerLiteralType = UInt
 
     public init(integerLiteral value: IntegerLiteralType) {
         assert(value >= 0)
 
-        self.init(Int(bitPattern: value))
+        self.init(RawIndex(truncatingIfNeeded: value))
     }
 }
