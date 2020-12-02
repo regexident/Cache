@@ -36,6 +36,7 @@ where
 
     public private(set) var count: Int
     internal private(set) var chunks: [Chunk]
+    internal private(set) var prng: SplitMix64
 
     public init() {
         self.init(minimumCapacity: 0)
@@ -74,6 +75,7 @@ where
     ) {
         self.count = count
         self.chunks = chunks
+        self.prng = .init(state: 0)
     }
 
     public mutating func insert() -> Index {
@@ -236,9 +238,8 @@ where
         )
     }
 
-    private func randomStartIndex() -> Index {
-        var prng = SplitMix64(state: .init(self.count))
-        let uint = UInt(truncatingIfNeeded: prng.next())
+    private mutating func randomStartIndex() -> Index {
+        let uint = UInt(truncatingIfNeeded: self.prng.next())
         let int = Int(truncatingIfNeeded: uint >> 1)
         let count = self.count
         let index = (count != 0) ? (int % count) : 0
