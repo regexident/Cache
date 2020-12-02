@@ -111,9 +111,11 @@ where
     public mutating func cachedValue(
         forKey key: Key,
         cost: Cost? = nil,
+        didMiss: UnsafeMutablePointer<Bool>? = nil,
         by closure: () throws -> Value
     ) rethrows -> Value {
         if let index = self.indicesByKey[key] {
+            didMiss?.pointee = false
             return self.value(forIndex: index)
         }
 
@@ -124,6 +126,8 @@ where
             forKey: key,
             cost: cost
         )
+
+        didMiss?.pointee = true
 
         return value
     }

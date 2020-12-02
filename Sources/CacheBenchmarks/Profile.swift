@@ -1,0 +1,69 @@
+import Foundation
+
+import ArgumentParser
+import Benchmark
+
+import Cache
+
+internal struct Profile: ParsableCommand {
+    static var configuration: CommandConfiguration = .init(
+        commandName: "profile",
+        abstract: "Convenience command for profiling 'Cache'."
+    )
+
+    @Argument(help: "The cache's max capacity")
+    internal var capacity: Int = 1000
+
+    @Argument(help: "The number of unique keys to cache")
+    internal var keys: Int = 2000
+
+    @Argument(help: "The number of key accesses to perform")
+    internal var accesses: Int = 100_000
+
+    @Argument(help: "The ordering of key accesses to perform")
+    internal var ordering: KeyOrder = .randomNormal
+
+    @Argument(help: "The cache replacement policy to use")
+    internal var policy: CachePolicyKind = .clock
+
+    mutating func run() throws {
+        print("Capacity: \(self.capacity)")
+        print("Keys: \(self.keys)")
+        print("Accesses: \(self.accesses)")
+        print("Ordering: \(self.ordering)")
+        print()
+
+        let capacity = self.capacity
+        let keyCount = self.keys
+        let accessCount = self.accesses
+        let keyOrder = self.ordering
+        let cachePolicy = self.policy
+
+        let keys: [Int] = makeKeysFor(
+            keys: keyCount,
+            accesses: accessCount,
+            ordered: keyOrder
+        )
+
+        switch cachePolicy {
+        case .lru:
+            runWith(
+                policy: BenchmarkPolicyLru.self,
+                capacity: capacity,
+                keys: keys
+            )
+        case .rr:
+            runWith(
+                policy: BenchmarkPolicyRr.self,
+                capacity: capacity,
+                keys: keys
+            )
+        case .clock:
+            runWith(
+                policy: BenchmarkPolicyClock.self,
+                capacity: capacity,
+                keys: keys
+            )
+        }
+    }
+}
