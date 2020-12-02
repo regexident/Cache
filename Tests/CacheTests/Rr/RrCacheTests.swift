@@ -49,15 +49,13 @@ final class RrCacheTests: XCTestCase {
         cache.setValue("4", forKey: 4, cost: 4)
         cache.setValue("5", forKey: 5, cost: 5)
 
-        XCTAssertEqual(cache.totalCost, 10)
-        XCTAssertEqual(cache.count, 4)
+        XCTAssertEqual(cache.totalCost, 9)
+        XCTAssertEqual(cache.count, 2)
 
         let actual = Dictionary(uniqueKeysWithValues: Array(cache))
         let expected: [Key: Value] = [
-            2: "2",
-            3: "3",
-            0: "0",
             5: "5",
+            4: "4",
         ]
 
         XCTAssertEqual(actual, expected)

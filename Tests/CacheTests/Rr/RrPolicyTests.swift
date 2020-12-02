@@ -98,9 +98,9 @@ final class RrPolicyTests: XCTestCase {
 
         let index = try XCTUnwrap(policy.remove())
 
-        XCTAssertEqual(index.absoluteBitIndex, 3)
+        XCTAssertEqual(index.absoluteBitIndex, 7)
         XCTAssertEqual(policy.count, 7)
-        XCTAssertEqual(policy.chunkBits, [0b11110111])
+        XCTAssertEqual(policy.chunkBits, [0b01111111])
     }
 
     func testRemoveFromDenselyFilledPolicy() throws {
@@ -111,9 +111,9 @@ final class RrPolicyTests: XCTestCase {
 
         let index = try XCTUnwrap(policy.remove())
 
-        XCTAssertEqual(index.absoluteBitIndex, 1)
+        XCTAssertEqual(index.absoluteBitIndex, 2)
         XCTAssertEqual(policy.count, 2)
-        XCTAssertEqual(policy.chunkBits, [0b00000101])
+        XCTAssertEqual(policy.chunkBits, [0b00000011])
     }
 
     func testRemoveFromSparselyFilledPolicy() throws {
