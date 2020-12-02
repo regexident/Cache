@@ -22,9 +22,11 @@ where
         return .init(bits: bits)
     }
 
+    @usableFromInline
     @inline(__always)
     internal var occupied: Chunk = .init()
 
+    @usableFromInline
     @inline(__always)
     internal var referenced: Chunk = .init()
 
