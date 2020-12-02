@@ -18,6 +18,15 @@ let package = Package(
             url: "https://github.com/apple/swift-log.git",
             from: "1.2.0"
         ),
+        .package(
+            name: "Benchmark",
+            url: "https://github.com/google/swift-benchmark.git",
+            .branch("main")
+        ),
+        .package(
+            url: "https://github.com/apple/swift-argument-parser",
+            from: "0.3.0"
+        ),
     ],
     targets: [
         .target(
@@ -33,6 +42,17 @@ let package = Package(
             name: "CacheTests",
             dependencies: [
                 "Cache",
+            ]
+        ),
+        .target(
+            name: "CacheBenchmarks",
+            dependencies: [
+                "Benchmark",
+                "Cache",
+                .product(
+                    name: "ArgumentParser",
+                    package: "swift-argument-parser"
+                ),
             ]
         ),
     ]
