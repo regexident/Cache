@@ -2,6 +2,15 @@
   "object": {
     "pins": [
       {
+        "package": "PseudoRandom",
+        "repositoryURL": "https://github.com/regexident/PseudoRandom.git",
+        "state": {
+          "branch": null,
+          "revision": "1ed315efab2c1f19444a1fa77e10de32dc23b31d",
+          "version": "0.1.0"
+        }
+      },
+      {
         "package": "swift-argument-parser",
         "repositoryURL": "https://github.com/apple/swift-argument-parser",
         "state": {

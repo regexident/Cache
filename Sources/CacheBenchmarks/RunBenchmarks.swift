@@ -4,9 +4,10 @@ import ArgumentParser
 import Benchmark
 
 import Cache
+import PseudoRandom
 
 typealias BenchmarkPolicyLru = CustomLruPolicy<Int>
-typealias BenchmarkPolicyRr = CustomRrPolicy<UInt64>
+typealias BenchmarkPolicyRr = CustomRrPolicy<UInt64, SplitMix64>
 typealias BenchmarkPolicyClock = CustomClockPolicy<UInt64>
 
 internal struct RunBenchmarks: ParsableCommand {
@@ -82,6 +83,3 @@ internal struct RunBenchmarks: ParsableCommand {
         Benchmark.main(suites)
     }
 }
-
-//benchmarkSpeedClock(capacity: capacity, keys: normalRandomizedKeys)
-//exit(0)

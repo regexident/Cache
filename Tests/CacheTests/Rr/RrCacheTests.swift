@@ -1,5 +1,7 @@
 import XCTest
 
+import PseudoRandom
+
 @testable import Cache
 
 final class RrCacheTests: XCTestCase {
@@ -8,7 +10,8 @@ final class RrCacheTests: XCTestCase {
     typealias Element = (key: Key, value: Value)
     typealias Cost = Int
     typealias Bits = UInt8
-    typealias Policy = CustomRrPolicy<Bits>
+    typealias Generator = SplitMix64
+    typealias Policy = CustomRrPolicy<Bits, Generator>
     typealias Cache = CustomCache<Key, Value, Cost, Policy>
 
     func cache(

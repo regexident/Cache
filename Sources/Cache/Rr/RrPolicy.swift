@@ -4,23 +4,25 @@
 
 import Logging
 
-public typealias RrCache<Key, Value> = CustomRrCache<Key, Value, Int, UInt64>
+public typealias RrCache<Key, Value> = CustomRrCache<Key, Value, Int, UInt64, SystemRandomNumberGenerator>
 where
     Key: Hashable
 
-public typealias CustomRrCache<Key, Value, Cost, Bits> = CustomCache<Key, Value, Cost, CustomRrPolicy<Bits>>
+public typealias CustomRrCache<Key, Value, Cost, Bits, Generator> = CustomCache<Key, Value, Cost, CustomRrPolicy<Bits, Generator>>
 where
     Key: Hashable,
     Cost: Comparable & Numeric,
-    Bits: FixedWidthInteger & UnsignedInteger
+    Bits: FixedWidthInteger & UnsignedInteger,
+    Generator: InitializableRandomNumberGenerator
 
 public typealias RrIndex = ChunkedBitIndex
 
-public typealias RrPolicy = CustomRrPolicy<UInt64>
+public typealias RrPolicy = CustomRrPolicy<UInt64, SystemRandomNumberGenerator>
 
-public struct CustomRrPolicy<Bits>: CachePolicy
+public struct CustomRrPolicy<Bits, Generator>: CachePolicy
 where
-    Bits: FixedWidthInteger & UnsignedInteger
+    Bits: FixedWidthInteger & UnsignedInteger,
+    Generator: InitializableRandomNumberGenerator
 {
     public typealias Index = RrIndex
 
@@ -36,13 +38,32 @@ where
 
     public private(set) var count: Int
     internal private(set) var chunks: [Chunk]
-    internal private(set) var prng: SplitMix64
+    internal private(set) var generator: Generator
 
     public init() {
-        self.init(minimumCapacity: 0)
+        self.init(generator: .init())
     }
 
-    public init(minimumCapacity: Int) {
+    public init(generator: Generator) {
+        self.init(
+            minimumCapacity: 0,
+            generator: generator
+        )
+    }
+
+    public init(
+        minimumCapacity: Int
+    ) {
+        self.init(
+            minimumCapacity: minimumCapacity,
+            generator: .init()
+        )
+    }
+
+    public init(
+        minimumCapacity: Int,
+        generator: Generator
+    ) {
         assert(minimumCapacity >= 0)
 
         // Next smallest greater than or equal power of 2:
@@ -65,17 +86,19 @@ where
 
         self.init(
             count: 0,
-            chunks: chunks
+            chunks: chunks,
+            generator: generator
         )
     }
 
     internal init(
         count: Int,
-        chunks: [Chunk]
+        chunks: [Chunk],
+        generator: Generator
     ) {
         self.count = count
         self.chunks = chunks
-        self.prng = .init(state: 0)
+        self.generator = generator
     }
 
     public mutating func insert() -> Index {
@@ -239,7 +262,7 @@ where
     }
 
     private mutating func randomStartIndex() -> Index {
-        let uint = UInt(truncatingIfNeeded: self.prng.next())
+        let uint = UInt(truncatingIfNeeded: self.generator.next())
         let int = Int(truncatingIfNeeded: uint >> 1)
         let count = self.count
         let index = (count != 0) ? (int % count) : 0

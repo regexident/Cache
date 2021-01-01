@@ -5,6 +5,7 @@ import ArgumentParser
 import Foundation
 
 import Cache
+import PseudoRandom
 
 typealias Key = Int
 typealias Value = Int
@@ -41,7 +42,7 @@ internal enum CachePolicyKind: String, ExpressibleByArgument, CustomStringConver
 }
 
 func makePrng(seed: Int = 0) -> SplitMix64 {
-    .init(state: .init(seed))
+    .init(seed: .init(seed))
 }
 
 func makeKeys(count: Int) -> Range<Int> {

@@ -15,7 +15,8 @@ extension CustomRrPolicy {
     ) {
         self.init(
             count: count,
-            chunks: chunkBits.map { .init(bits: $0) }
+            chunks: chunkBits.map { .init(bits: $0) },
+            generator: .init()
         )
     }
 }

@@ -19,6 +19,10 @@ let package = Package(
             from: "1.2.0"
         ),
         .package(
+            url: "https://github.com/regexident/PseudoRandom.git",
+            from: "0.1.0"
+        ),
+        .package(
             name: "Benchmark",
             url: "https://github.com/google/swift-benchmark.git",
             .branch("main")

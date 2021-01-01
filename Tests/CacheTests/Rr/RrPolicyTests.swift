@@ -1,10 +1,13 @@
 import XCTest
 
+import PseudoRandom
+
 @testable import Cache
 
 final class RrPolicyTests: XCTestCase {
     typealias Bits = UInt8
-    typealias Policy = CustomRrPolicy<Bits>
+    typealias Generator = SplitMix64
+    typealias Policy = CustomRrPolicy<Bits, Generator>
     typealias Index = Policy.Index
 
     func policy(
