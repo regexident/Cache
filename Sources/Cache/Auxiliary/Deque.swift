@@ -45,57 +45,11 @@ where
 {
 }
 
-// The only purpose of this index wrapper type is to make it
-// impossible for users of the API to create indices themselves.
-public struct BufferedDequeIndex<RawValue> {
-    @usableFromInline
-    internal let rawValue: RawValue
-
-    @inlinable
-    @inline(__always)
-    internal init(_ rawValue: RawValue) {
-        self.rawValue = rawValue
-    }
-}
-
-extension BufferedDequeIndex: Equatable
-where
-    RawValue: Equatable
-{
-    @inlinable
-    @inline(__always)
-    public static func == (
-        lhs: Self,
-        rhs: Self
-    ) -> Bool {
-        lhs.rawValue == rhs.rawValue
-    }
-}
-
-extension BufferedDequeIndex: Hashable
-where
-    RawValue: Hashable
-{
-    @inlinable
-    @inline(__always)
-    public func hash(into hasher: inout Hasher) {
-        self.rawValue.hash(into: &hasher)
-    }
-}
-
-extension BufferedDequeIndex: CustomStringConvertible {
-    @inlinable
-    @inline(__always)
-    public var description: String {
-        String(describing: self.rawValue)
-    }
-}
-
 public struct BufferedDeque<Element, RawIndex>
 where
     RawIndex: BinaryInteger
 {
-    public typealias Index = BufferedDequeIndex<RawIndex>
+    public typealias Index = OpaqueIndex<RawIndex>
     internal typealias Node = BufferedDequeNode<Element, RawIndex>
 
     public var isEmpty: Bool {
