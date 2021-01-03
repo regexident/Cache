@@ -45,12 +45,57 @@ where
 {
 }
 
+// The only purpose of this index wrapper type is to make it
+// impossible for users of the API to create indices themselves.
+public struct BufferedDequeIndex<RawValue> {
+    @usableFromInline
+    internal let rawValue: RawValue
+
+    @inlinable
+    @inline(__always)
+    internal init(_ rawValue: RawValue) {
+        self.rawValue = rawValue
+    }
+}
+
+extension BufferedDequeIndex: Equatable
+where
+    RawValue: Equatable
+{
+    @inlinable
+    @inline(__always)
+    public static func == (
+        lhs: Self,
+        rhs: Self
+    ) -> Bool {
+        lhs.rawValue == rhs.rawValue
+    }
+}
+
+extension BufferedDequeIndex: Hashable
+where
+    RawValue: Hashable
+{
+    @inlinable
+    @inline(__always)
+    public func hash(into hasher: inout Hasher) {
+        self.rawValue.hash(into: &hasher)
+    }
+}
+
+extension BufferedDequeIndex: CustomStringConvertible {
+    @inlinable
+    @inline(__always)
+    public var description: String {
+        String(describing: self.rawValue)
+    }
+}
+
 public struct BufferedDeque<Element, RawIndex>
 where
     RawIndex: BinaryInteger
 {
-    public typealias Index = LruIndex<RawIndex>
-    public typealias Payload = LruPayload
+    public typealias Index = BufferedDequeIndex<RawIndex>
     internal typealias Node = BufferedDequeNode<Element, RawIndex>
 
     public var isEmpty: Bool {
@@ -171,7 +216,7 @@ where
     }
 
     public mutating func moveToFront(_ index: Index) {
-        guard self.head != index.value else {
+        guard self.head != index.rawValue else {
             return
         }
 
@@ -194,7 +239,7 @@ where
     }
 
     public mutating func remove(at index: Index) -> Element {
-        let rawIndex = index.value
+        let rawIndex = index.rawValue
 
         let nodeOrNil: Node.Occupied? = self.modifyNode(at: rawIndex) { node in
             switch node {
@@ -211,11 +256,11 @@ where
             fatalError("Expected node, found nil")
         }
 
-        if self.head == index.value {
+        if self.head == index.rawValue {
             self.head = node.next
         }
 
-        if self.tail == index.value {
+        if self.tail == index.rawValue {
             self.tail = node.previous
         }
 

@@ -84,7 +84,7 @@ final class RrPolicyTests: XCTestCase {
             chunkBits: [0b00011010]
         )
 
-        policy.use(.init(absoluteBitIndex: 3))
+        policy.use(.init(3))
 
         // RrPolicy does not do anything on `.use(…)`
         // so we shouldn't see any change either:
@@ -138,17 +138,17 @@ final class RrPolicyTests: XCTestCase {
             chunkBits: [0b00011010]
         )
 
-        let _ = policy.remove(.init(absoluteBitIndex: 1))
+        let _ = policy.remove(.init(1))
 
         XCTAssertEqual(policy.count, 2)
         XCTAssertEqual(policy.chunkBits, [0b00011000])
 
-        let _ = policy.remove(.init(absoluteBitIndex: 4))
+        let _ = policy.remove(.init(4))
 
         XCTAssertEqual(policy.count, 1)
         XCTAssertEqual(policy.chunkBits, [0b00001000])
 
-        let _ = policy.remove(.init(absoluteBitIndex: 3))
+        let _ = policy.remove(.init(3))
 
         XCTAssertEqual(policy.count, 0)
         XCTAssertEqual(policy.chunkBits, [0b00000000])

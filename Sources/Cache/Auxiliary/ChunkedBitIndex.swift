@@ -23,10 +23,10 @@ public struct ChunkedBitIndex {
     }
 
     internal init() {
-        self.init(absoluteBitIndex: 0)
+        self.init(0)
     }
 
-    internal init(absoluteBitIndex: Int) {
+    internal init(_ absoluteBitIndex: Int) {
         assert(absoluteBitIndex >= 0)
 
         self._absoluteBitIndex = .init(absoluteBitIndex)

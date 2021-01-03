@@ -36,8 +36,8 @@ final class ClockPolicyTests: XCTestCase {
         XCTAssertEqual(policy.count, 1)
         XCTAssertEqual(policy.occupiedBits, [0b00000001])
         XCTAssertEqual(policy.referencedBits, [0b00000001])
-        XCTAssertEqual(policy.cursors.insert, 1)
-        XCTAssertEqual(policy.cursors.remove, 0)
+        XCTAssertEqual(policy.cursors.insert, .init(1))
+        XCTAssertEqual(policy.cursors.remove, .init(0))
     }
 
     func testInsertIntoDenselyFilledPolicy() throws {
@@ -46,8 +46,8 @@ final class ClockPolicyTests: XCTestCase {
         XCTAssertEqual(policy.count, 3)
         XCTAssertEqual(policy.occupiedBits, [0b00000111])
         XCTAssertEqual(policy.referencedBits, [0b00000111])
-        XCTAssertEqual(policy.cursors.insert, 3)
-        XCTAssertEqual(policy.cursors.remove, 0)
+        XCTAssertEqual(policy.cursors.insert, .init(3))
+        XCTAssertEqual(policy.cursors.remove, .init(0))
 
         let index = policy.insert(payload: .default)
 
@@ -55,8 +55,8 @@ final class ClockPolicyTests: XCTestCase {
         XCTAssertEqual(policy.count, 4)
         XCTAssertEqual(policy.occupiedBits, [0b00001111])
         XCTAssertEqual(policy.referencedBits, [0b00001111])
-        XCTAssertEqual(policy.cursors.insert, 4)
-        XCTAssertEqual(policy.cursors.remove, 0)
+        XCTAssertEqual(policy.cursors.insert, .init(4))
+        XCTAssertEqual(policy.cursors.remove, .init(0))
     }
 
     func testInsertIntoSparselyFilledPolicy() throws {
@@ -64,8 +64,8 @@ final class ClockPolicyTests: XCTestCase {
             count: 3,
             occupiedBits: [0b00011001],
             referencedBits: [0b00011001],
-            insertCursor: 3,
-            removeCursor: 3
+            insertCursor: .init(3),
+            removeCursor: .init(3)
         )
 
         let index = policy.insert(payload: .default)
@@ -74,8 +74,8 @@ final class ClockPolicyTests: XCTestCase {
         XCTAssertEqual(policy.count, 4)
         XCTAssertEqual(policy.occupiedBits, [0b00111001])
         XCTAssertEqual(policy.referencedBits, [0b00111001])
-        XCTAssertEqual(policy.cursors.insert, 6)
-        XCTAssertEqual(policy.cursors.remove, 3)
+        XCTAssertEqual(policy.cursors.insert, .init(6))
+        XCTAssertEqual(policy.cursors.remove, .init(3))
     }
 
     func testInsertIntoSaturatedPolicy() {
@@ -83,8 +83,8 @@ final class ClockPolicyTests: XCTestCase {
             count: 8,
             occupiedBits: [0b11111111],
             referencedBits: [0b11111111],
-            insertCursor: 3,
-            removeCursor: 3
+            insertCursor: .init(3),
+            removeCursor: .init(3)
         )
 
         let index = policy.insert(payload: .default)
@@ -93,8 +93,8 @@ final class ClockPolicyTests: XCTestCase {
         XCTAssertEqual(policy.count, 9)
         XCTAssertEqual(policy.occupiedBits, [0b11111111, 0b00000001])
         XCTAssertEqual(policy.referencedBits, [0b11111111, 0b00000001])
-        XCTAssertEqual(policy.cursors.insert, 9)
-        XCTAssertEqual(policy.cursors.remove, 3)
+        XCTAssertEqual(policy.cursors.insert, .init(9))
+        XCTAssertEqual(policy.cursors.remove, .init(3))
     }
 
     func testUse() throws {
@@ -102,29 +102,29 @@ final class ClockPolicyTests: XCTestCase {
             count: 3,
             occupiedBits: [0b00011010],
             referencedBits: [0b00010010],
-            insertCursor: 3,
-            removeCursor: 3
+            insertCursor: .init(3),
+            removeCursor: .init(3)
         )
 
         // Use referenced index:
 
-        policy.use(.init(absoluteBitIndex: 3))
+        policy.use(.init(3))
 
         XCTAssertEqual(policy.count, 3)
         XCTAssertEqual(policy.occupiedBits, [0b00011010])
         XCTAssertEqual(policy.referencedBits, [0b00011010])
-        XCTAssertEqual(policy.cursors.insert, 3)
-        XCTAssertEqual(policy.cursors.remove, 3)
+        XCTAssertEqual(policy.cursors.insert, .init(3))
+        XCTAssertEqual(policy.cursors.remove, .init(3))
 
         // Use unreferenced index:
 
-        policy.use(.init(absoluteBitIndex: 3))
+        policy.use(.init(3))
 
         XCTAssertEqual(policy.count, 3)
         XCTAssertEqual(policy.occupiedBits, [0b00011010])
         XCTAssertEqual(policy.referencedBits, [0b00011010])
-        XCTAssertEqual(policy.cursors.insert, 3)
-        XCTAssertEqual(policy.cursors.remove, 3)
+        XCTAssertEqual(policy.cursors.insert, .init(3))
+        XCTAssertEqual(policy.cursors.remove, .init(3))
     }
 
     func testRemoveFromFullPolicy() throws {
@@ -132,8 +132,8 @@ final class ClockPolicyTests: XCTestCase {
             count: 8,
             occupiedBits: [0b11111111],
             referencedBits: [0b11111111],
-            insertCursor: 3,
-            removeCursor: 3
+            insertCursor: .init(3),
+            removeCursor: .init(3)
         )
 
         let (index, _) = try XCTUnwrap(policy.remove())
@@ -142,8 +142,8 @@ final class ClockPolicyTests: XCTestCase {
         XCTAssertEqual(policy.count, 7)
         XCTAssertEqual(policy.occupiedBits, [0b11110111])
         XCTAssertEqual(policy.referencedBits, [0b00000000])
-        XCTAssertEqual(policy.cursors.insert, 3)
-        XCTAssertEqual(policy.cursors.remove, 4)
+        XCTAssertEqual(policy.cursors.insert, .init(3))
+        XCTAssertEqual(policy.cursors.remove, .init(4))
     }
 
     func testRemoveFromDenselyFilledPolicy() throws {
@@ -152,8 +152,8 @@ final class ClockPolicyTests: XCTestCase {
         XCTAssertEqual(policy.count, 3)
         XCTAssertEqual(policy.occupiedBits, [0b00000111])
         XCTAssertEqual(policy.referencedBits, [0b00000111])
-        XCTAssertEqual(policy.cursors.insert, 3)
-        XCTAssertEqual(policy.cursors.remove, 0)
+        XCTAssertEqual(policy.cursors.insert, .init(3))
+        XCTAssertEqual(policy.cursors.remove, .init(0))
 
         let (index, _) = try XCTUnwrap(policy.remove())
 
@@ -161,8 +161,8 @@ final class ClockPolicyTests: XCTestCase {
         XCTAssertEqual(policy.count, 2)
         XCTAssertEqual(policy.occupiedBits, [0b00000110])
         XCTAssertEqual(policy.referencedBits, [0b00000000])
-        XCTAssertEqual(policy.cursors.insert, 3)
-        XCTAssertEqual(policy.cursors.remove, 1)
+        XCTAssertEqual(policy.cursors.insert, .init(3))
+        XCTAssertEqual(policy.cursors.remove, .init(1))
     }
 
     func testRemoveFromSparselyFilledPolicy() throws {
@@ -170,8 +170,8 @@ final class ClockPolicyTests: XCTestCase {
             count: 3,
             occupiedBits: [0b00011010],
             referencedBits: [0b00011010],
-            insertCursor: 3,
-            removeCursor: 3
+            insertCursor: .init(3),
+            removeCursor: .init(3)
         )
 
         let (index, _) = try XCTUnwrap(policy.remove())
@@ -180,8 +180,8 @@ final class ClockPolicyTests: XCTestCase {
         XCTAssertEqual(policy.count, 2)
         XCTAssertEqual(policy.occupiedBits, [0b00010010])
         XCTAssertEqual(policy.referencedBits, [0b00000000])
-        XCTAssertEqual(policy.cursors.insert, 3)
-        XCTAssertEqual(policy.cursors.remove, 4)
+        XCTAssertEqual(policy.cursors.insert, .init(3))
+        XCTAssertEqual(policy.cursors.remove, .init(4))
     }
 
     func testRemoveIndex() throws {
@@ -189,33 +189,33 @@ final class ClockPolicyTests: XCTestCase {
             count: 3,
             occupiedBits: [0b00011010],
             referencedBits: [0b00011010],
-            insertCursor: 3,
-            removeCursor: 3
+            insertCursor: .init(3),
+            removeCursor: .init(3)
         )
 
-        let _ = policy.remove(.init(absoluteBitIndex: 1))
+        let _ = policy.remove(.init(1))
 
         XCTAssertEqual(policy.count, 2)
         XCTAssertEqual(policy.occupiedBits, [0b00011000])
         XCTAssertEqual(policy.referencedBits, [0b00011000])
-        XCTAssertEqual(policy.cursors.insert, 3)
-        XCTAssertEqual(policy.cursors.remove, 3)
+        XCTAssertEqual(policy.cursors.insert, .init(3))
+        XCTAssertEqual(policy.cursors.remove, .init(3))
 
-        let _ = policy.remove(.init(absoluteBitIndex: 4))
+        let _ = policy.remove(.init(4))
 
         XCTAssertEqual(policy.count, 1)
         XCTAssertEqual(policy.occupiedBits, [0b00001000])
         XCTAssertEqual(policy.referencedBits, [0b00001000])
-        XCTAssertEqual(policy.cursors.insert, 3)
-        XCTAssertEqual(policy.cursors.remove, 3)
+        XCTAssertEqual(policy.cursors.insert, .init(3))
+        XCTAssertEqual(policy.cursors.remove, .init(3))
 
-        let _ = policy.remove(.init(absoluteBitIndex: 3))
+        let _ = policy.remove(.init(3))
 
         XCTAssertEqual(policy.count, 0)
         XCTAssertEqual(policy.occupiedBits, [0b00000000])
         XCTAssertEqual(policy.referencedBits, [0b00000000])
-        XCTAssertEqual(policy.cursors.insert, 3)
-        XCTAssertEqual(policy.cursors.remove, 3)
+        XCTAssertEqual(policy.cursors.insert, .init(3))
+        XCTAssertEqual(policy.cursors.remove, .init(3))
     }
 
     func testRemoveAll() throws {
@@ -226,8 +226,8 @@ final class ClockPolicyTests: XCTestCase {
         XCTAssertEqual(policy.count, 0)
         XCTAssertEqual(policy.occupiedBits, [])
         XCTAssertEqual(policy.referencedBits, [])
-        XCTAssertEqual(policy.cursors.insert, 0)
-        XCTAssertEqual(policy.cursors.remove, 0)
+        XCTAssertEqual(policy.cursors.insert, .init(0))
+        XCTAssertEqual(policy.cursors.remove, .init(0))
         XCTAssertEqual(policy.capacity, 0)
     }
 
@@ -241,8 +241,8 @@ final class ClockPolicyTests: XCTestCase {
         XCTAssertEqual(policy.count, 0)
         XCTAssertEqual(policy.occupiedBits, [])
         XCTAssertEqual(policy.referencedBits, [])
-        XCTAssertEqual(policy.cursors.insert, 0)
-        XCTAssertEqual(policy.cursors.remove, 0)
+        XCTAssertEqual(policy.cursors.insert, .init(0))
+        XCTAssertEqual(policy.cursors.remove, .init(0))
         XCTAssertEqual(policy.capacity, capacity)
     }
 

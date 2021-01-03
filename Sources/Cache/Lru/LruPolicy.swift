@@ -13,16 +13,14 @@ where
     Key: Hashable,
     Index: BinaryInteger
 
-public typealias LruPayload = NoPayload
-
 public typealias LruPolicy = CustomLruPolicy<UInt32>;
 
 public struct CustomLruPolicy<RawIndex>: CachePolicy
 where
     RawIndex: BinaryInteger
 {
-    public typealias Index = LruIndex<RawIndex>
-    public typealias Payload = LruPayload
+    public typealias Index = BufferedDeque<Payload, RawIndex>.Index
+    public typealias Payload = NoPayload
 
     internal typealias Deque = BufferedDeque<Payload, RawIndex>
     internal typealias Node = Deque.Node

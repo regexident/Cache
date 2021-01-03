@@ -14,9 +14,6 @@ where
     Bits: FixedWidthInteger & UnsignedInteger,
     Generator: InitializableRandomNumberGenerator
 
-public typealias RrIndex = ChunkedBitIndex
-public typealias RrPayload = NoPayload
-
 public typealias RrPolicy = CustomRrPolicy<UInt64, SystemRandomNumberGenerator>
 
 public struct CustomRrPolicy<Bits, Generator>: CachePolicy
@@ -24,8 +21,8 @@ where
     Bits: FixedWidthInteger & UnsignedInteger,
     Generator: InitializableRandomNumberGenerator
 {
-    public typealias Index = RrIndex
-    public typealias Payload = RrPayload
+    public typealias Index = ChunkedBitIndex
+    public typealias Payload = NoPayload
 
     internal typealias Chunk = BitChunk<Bits>
 
@@ -287,7 +284,7 @@ where
         let int = Int(truncatingIfNeeded: uint >> 1)
         let count = self.count
         let index = (count != 0) ? (int % count) : 0
-        return .init(absoluteBitIndex: index)
+        return .init(index)
     }
 
     private func logState(to logger: Logger = logger) {

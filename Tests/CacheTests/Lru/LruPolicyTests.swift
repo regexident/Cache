@@ -32,8 +32,8 @@ final class LruPolicyTests: XCTestCase {
 
         let head = policy.insert(payload: .default)
 
-        XCTAssertEqual(policy.deque.head, head.value)
-        XCTAssertEqual(policy.deque.tail, head.value)
+        XCTAssertEqual(policy.deque.head, head.rawValue)
+        XCTAssertEqual(policy.deque.tail, head.rawValue)
         XCTAssertEqual(policy.deque.nodes, [
             .occupied(.init(
                 element: .default,
@@ -45,8 +45,8 @@ final class LruPolicyTests: XCTestCase {
 
         let newHead = policy.insert(payload: .default)
 
-        XCTAssertEqual(policy.deque.head, newHead.value)
-        XCTAssertEqual(policy.deque.tail, head.value)
+        XCTAssertEqual(policy.deque.head, newHead.rawValue)
+        XCTAssertEqual(policy.deque.tail, head.rawValue)
         XCTAssertEqual(policy.deque.nodes, [
             .occupied(.init(
                 element: .default,
@@ -96,7 +96,7 @@ final class LruPolicyTests: XCTestCase {
         ])
         XCTAssertEqual(policy.deque.firstFree, nil)
 
-        let index: Index = 2
+        let index: Index = .init(2)
         policy.use(index)
 
         XCTAssertEqual(policy.deque.head, 2)
@@ -136,7 +136,7 @@ final class LruPolicyTests: XCTestCase {
 
         let (index, _) = try XCTUnwrap(policy.remove())
 
-        XCTAssertEqual(index, 0)
+        XCTAssertEqual(index, .init(0))
     }
 
     func testRemoveIndex() throws {
@@ -174,7 +174,7 @@ final class LruPolicyTests: XCTestCase {
         XCTAssertEqual(policy.deque.firstFree, nil)
 
         // depolicy head:
-        let _ = policy.remove(4)
+        let _ = policy.remove(.init(4))
 
         XCTAssertEqual(policy.deque.head, 3)
         XCTAssertEqual(policy.deque.tail, 0)
@@ -204,7 +204,7 @@ final class LruPolicyTests: XCTestCase {
         XCTAssertEqual(policy.deque.firstFree, 4)
 
         // depolicy middle:
-        let _ = policy.remove(2)
+        let _ = policy.remove(.init(2))
 
         XCTAssertEqual(policy.deque.head, 3)
         XCTAssertEqual(policy.deque.tail, 0)
@@ -230,7 +230,7 @@ final class LruPolicyTests: XCTestCase {
         XCTAssertEqual(policy.deque.firstFree, 2)
 
         // depolicy tail:
-        let _ = policy.remove(0)
+        let _ = policy.remove(.init(0))
 
         XCTAssertEqual(policy.deque.head, 3)
         XCTAssertEqual(policy.deque.tail, 1)

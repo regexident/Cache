@@ -13,24 +13,19 @@ where
     Key: Hashable,
     Bits: FixedWidthInteger & UnsignedInteger
 
-public typealias ClockIndex = ChunkedBitIndex
-public typealias ClockPayload = NoPayload
-
 public typealias ClockPolicy = CustomClockPolicy<UInt64>
 
 public struct CustomClockPolicy<Bits>: CachePolicy
 where
     Bits: FixedWidthInteger & UnsignedInteger
 {
-    public typealias Index = ClockIndex
-    public typealias Payload = ClockPayload
+    public typealias Index = ChunkedBitIndex
+    public typealias Payload = NoPayload
 
     internal typealias Chunk = BitChunk<Bits>
     internal typealias Block = ClockBlock<Bits>
 
     internal struct Cursors {
-        public typealias Index = ClockIndex
-
         internal var insert: Index = .init()
         internal var remove: Index = .init()
     }

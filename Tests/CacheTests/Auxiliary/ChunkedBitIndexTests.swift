@@ -13,7 +13,7 @@ final class ChunkedBitIndexTests: XCTestCase {
     }
 
     func testInitAbsoluteBitIndex() throws {
-        let index = Index(absoluteBitIndex: 42)
+        let index = Index(42)
 
         XCTAssertEqual(index.absoluteBitIndex, 42)
     }
@@ -57,7 +57,7 @@ final class ChunkedBitIndexTests: XCTestCase {
 
     func testIndicesGiven() throws {
         let absoluteBitIndex: Int = 1234
-        let index = Index(absoluteBitIndex: absoluteBitIndex)
+        let index = Index(absoluteBitIndex)
 
         let indicesUInt8 = index.indices(given: UInt8.self)
 
@@ -81,7 +81,7 @@ final class ChunkedBitIndexTests: XCTestCase {
     }
 
     func testAdvancedBy() throws {
-        let index = Index(absoluteBitIndex: 42)
+        let index = Index(42)
 
         func applying(
             index: Index,
@@ -97,7 +97,7 @@ final class ChunkedBitIndexTests: XCTestCase {
             applying(index: index) {
                 $0.absoluteBitIndex &-= 42
             },
-            .init(absoluteBitIndex: 0)
+            .init(0)
         )
 
         // Adding while staying in positive range:
@@ -105,7 +105,7 @@ final class ChunkedBitIndexTests: XCTestCase {
             applying(index: index) {
                 $0.absoluteBitIndex &+= 42
             },
-            .init(absoluteBitIndex: 84)
+            .init(84)
         )
 
         // Subtracting while passing zero into negative range:
@@ -113,7 +113,7 @@ final class ChunkedBitIndexTests: XCTestCase {
             applying(index: index) {
                 $0.absoluteBitIndex &-= 84
             },
-            .init(absoluteBitIndex: .max - 42 + 1)
+            .init(.max - 42 + 1)
         )
 
         // Adding while passing Int.Max into negative range:
@@ -121,7 +121,7 @@ final class ChunkedBitIndexTests: XCTestCase {
             applying(index: index) {
                 $0.absoluteBitIndex &+= Int.max
             },
-            .init(absoluteBitIndex: 42 - 1)
+            .init(42 - 1)
         )
     }
 
