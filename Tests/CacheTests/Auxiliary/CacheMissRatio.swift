@@ -11,10 +11,11 @@ internal typealias Scenario = (
 )
 
 internal func testCacheHitRatio<Keys, Policy>(
-    accesses: Int,
     scenarios: [Scenario],
+    iterations: Int = 5,
     file: StaticString = #file,
-    cache cacheProvider: (Int) -> CustomCache<Int, (), Int, Policy>,
+    accesses: (Int, Int) -> Int,
+    cache cacheProvider: (Int, Int) -> CustomCache<Int, (), Policy>,
     keys keysProvider: (Int) -> Keys
 ) throws
 where
@@ -22,16 +23,23 @@ where
     Keys.Element == Int,
     Policy: CachePolicy
 {
+    assert(iterations > 0)
+    
     for (capacity, keys, expected, line) in scenarios {
-        let actual = try calculateCacheHitRatio(
-            accesses: accesses,
-            cache: {
-                cacheProvider(capacity)
-            },
-            keys: {
-                keysProvider(keys)
-            }
-        )
+        let actuals: [Double] = try (0..<iterations).map { iteration in
+            try calculateCacheHitRatio(
+                accesses: accesses(capacity, keys),
+                cache: {
+                    cacheProvider(capacity, iteration)
+                },
+                keys: {
+                    keysProvider(keys)
+                }
+            )
+        }
+
+        // Median cache hit ratio:
+        let actual: Double = actuals.sorted()[actuals.count / 2]
 
         XCTAssertGreaterThanOrEqual(
             actual,
@@ -44,7 +52,7 @@ where
 
 internal func calculateCacheHitRatio<Keys, Policy>(
     accesses: Int,
-    cache cacheProvider: () -> CustomCache<Int, (), Int, Policy>,
+    cache cacheProvider: () -> CustomCache<Int, (), Policy>,
     keys keysProvider: () -> Keys
 ) throws -> Double
 where

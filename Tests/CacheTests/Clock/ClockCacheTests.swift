@@ -11,54 +11,57 @@ final class ClockCacheTests: XCTestCase {
     typealias Element = (key: Key, value: Value)
     typealias Cost = Int
     typealias Bits = UInt8
-    typealias Policy = CustomClockPolicy<Bits>
-    typealias Cache = CustomCache<Key, Value, Cost, Policy>
+    typealias Policy = CapacityPolicy<CustomClockPolicy<Bits>>
+    typealias Cache = CustomCache<Key, Value, Policy>
 
-    let accesses: Int = 100_000
-
-    func cache(
-        totalCostLimit: Cost? = nil,
-        defaultCost: Cost = 1,
-        elements: [Element] = []
-    ) -> Cache {
-        var cache = Cache(
-            totalCostLimit: totalCostLimit,
-            defaultCost: defaultCost
-        )
-
-        for (key, value) in elements {
-            cache.setValue(value, forKey: key)
+    func cache<Value>(
+        minimumCapacity: Int = 0,
+        maximumCapacity: Int
+    ) -> CustomCache<Key, Value, Policy> {
+        .init { minimumCapacity in
+            self.policy(
+                minimumCapacity: minimumCapacity,
+                maximumCapacity: maximumCapacity
+            )
         }
+    }
 
-        return cache
+    func policy(
+        minimumCapacity: Int = 0,
+        maximumCapacity: Int
+    ) -> Policy {
+        .init(
+            base: .init(
+                minimumCapacity: minimumCapacity
+            ),
+            maximumCapacity: maximumCapacity
+        )
     }
 
     func testInit() throws {
-        let cache = self.cache()
+        let cache: Cache = self.cache(maximumCapacity: 10)
 
         XCTAssertTrue(cache.isEmpty)
         XCTAssertEqual(cache.count, 0)
     }
 
-    func testTotalCostLimit() throws {
-        let totalCostLimit = 10
+    func testMaximumCapacity() throws {
+        let maximumCapacity = 3
 
-        var cache = self.cache(
-            totalCostLimit: totalCostLimit
-        )
+        var cache: Cache = self.cache(maximumCapacity: maximumCapacity)
 
-        cache.setValue("0", forKey: 0, cost: 0)
-        cache.setValue("1", forKey: 1, cost: 1)
-        cache.setValue("2", forKey: 2, cost: 2)
-        cache.setValue("3", forKey: 3, cost: 3)
-        cache.setValue("4", forKey: 4, cost: 4)
-        cache.setValue("5", forKey: 5, cost: 5)
+        cache.setValue("0", forKey: 0)
+        cache.setValue("1", forKey: 1)
+        cache.setValue("2", forKey: 2)
+        cache.setValue("3", forKey: 3)
+        cache.setValue("4", forKey: 4)
+        cache.setValue("5", forKey: 5)
 
-        XCTAssertEqual(cache.totalCost, 9)
-        XCTAssertEqual(cache.count, 2)
+        XCTAssertEqual(cache.count, maximumCapacity)
 
         let actual = Dictionary(uniqueKeysWithValues: Array(cache))
         let expected: [Key: Value] = [
+            3: "3",
             4: "4",
             5: "5",
         ]
@@ -67,7 +70,7 @@ final class ClockCacheTests: XCTestCase {
     }
 
     func testIsEmpty() throws {
-        var cache = Cache()
+        var cache: Cache = self.cache(maximumCapacity: 3)
 
         XCTAssertTrue(cache.isEmpty)
 
@@ -77,7 +80,7 @@ final class ClockCacheTests: XCTestCase {
     }
 
     func testCount() throws {
-        var cache = Cache()
+        var cache: Cache = self.cache(maximumCapacity: 10)
 
         XCTAssertEqual(cache.count, 0)
 
@@ -89,15 +92,17 @@ final class ClockCacheTests: XCTestCase {
     }
 
     func testRemoveValueForKey() throws {
+        var cache: Cache = self.cache(maximumCapacity: 10)
+
         let elements: [Element] = [
             (0, "0"),
             (1, "1"),
             (2, "2"),
         ]
 
-        var cache = self.cache(
-            elements: elements
-        )
+        for (key, value) in elements {
+            cache.setValue(value, forKey: key)
+        }
 
         XCTAssertEqual(cache.count, 3)
 
@@ -111,15 +116,17 @@ final class ClockCacheTests: XCTestCase {
     }
 
     func testRemoveAll() throws {
+        var cache: Cache = self.cache(maximumCapacity: 10)
+
         let elements: [Element] = [
             (0, "0"),
             (1, "1"),
             (2, "2"),
         ]
 
-        var cache = self.cache(
-            elements: elements
-        )
+        for (key, value) in elements {
+            cache.setValue(value, forKey: key)
+        }
 
         XCTAssertEqual(cache.count, 3)
 
@@ -128,74 +135,93 @@ final class ClockCacheTests: XCTestCase {
     }
 
     func testSetValueForKey() throws {
-        var cache = self.cache(
-            elements: [
-                (0, "0"),
-                (1, "1"),
-                (2, "2"),
-            ]
-        )
+        var cache: Cache = self.cache(maximumCapacity: 10)
+
+        let elements: [Element] = [
+            (0, "0"),
+            (1, "1"),
+            (2, "2"),
+        ]
+
+        for (key, value) in elements {
+            cache.setValue(value, forKey: key)
+        }
 
         // Remove an existing key:
         cache.setValue(nil, forKey: 1)
-        XCTAssertEqual(
-            cache,
-            self.cache(
-                elements: [
-                    (0, "0"),
-                    (2, "2"),
-                ]
-            )
+
+        let actual: [Key: Value] = Dictionary(
+            uniqueKeysWithValues: Array(cache)
         )
 
-        // The other operations forward to `updateValue(_:forKey:)`
+        let expected: [Key: Value] = [
+            0: "0",
+            2: "2",
+        ]
+
+        XCTAssertEqual(actual, expected)
     }
 
     func testUpdateValueForKey() throws {
-        var cache = self.cache(
-            elements: [
-                (0, "0"),
-                (1, "1"),
-                (2, "_"),
-            ]
-        )
+        var actual: [Key: Value]
+        var expected: [Key: Value]
+
+        var cache: Cache = self.cache(maximumCapacity: 10)
+
+        let elements: [Element] = [
+            (0, "0"),
+            (1, "1"),
+            (2, "_"),
+        ]
+
+        for (key, value) in elements {
+            cache.setValue(value, forKey: key)
+        }
 
         // Add an existing key:
         cache.updateValue("2", forKey: 2)
-        XCTAssertEqual(
-            cache,
-            self.cache(
-                elements: [
-                    (0, "0"),
-                    (1, "1"),
-                    (2, "2"),
-                ]
-            )
+
+        actual = Dictionary(
+            uniqueKeysWithValues: Array(cache)
         )
+
+        expected = [
+            0: "0",
+            1: "1",
+            2: "2",
+        ]
+
+        XCTAssertEqual(actual, expected)
 
         // Add non-existing key:
         cache.updateValue("4", forKey: 4)
-        XCTAssertEqual(
-            cache,
-            self.cache(
-                elements: [
-                    (0, "0"),
-                    (1, "1"),
-                    (2, "2"),
-                    (4, "4"),
-                ]
-            )
+
+        actual = Dictionary(
+            uniqueKeysWithValues: Array(cache)
         )
+
+        expected = [
+            0: "0",
+            1: "1",
+            2: "2",
+            4: "4",
+        ]
+
+        XCTAssertEqual(actual, expected)
     }
 
     func testValueForKey() throws {
-        var cache = self.cache(
-            elements: [
-                (0, "0"),
-                (1, "1"),
-                (2, "2"),
-            ]
-        )
+        var cache: Cache = self.cache(maximumCapacity: 10)
+
+        let elements: [Element] = [
+            (0, "0"),
+            (1, "1"),
+            (2, "2"),
+        ]
+
+        for (key, value) in elements {
+            cache.setValue(value, forKey: key)
+        }
 
         // An existing key:
         XCTAssertEqual(cache.value(forKey: 2), "2")
@@ -210,16 +236,16 @@ final class ClockCacheTests: XCTestCase {
             shouldValidate = false
         }
         
-        let capacity: Int = 10
+        let maximumCapacity: Int = 10
         let keyCount: Int = 100
         let accessCount: Int = 1000
 
         let keys: Range<Int> = 0..<keyCount
 
-        var cache = Cache(totalCostLimit: capacity)
+        var cache: Cache = self.cache(maximumCapacity: maximumCapacity)
 
         for i in 0..<accessCount {
-            let index = i % Int(Double(capacity) * 1.1)
+            let index = i % Int(Double(maximumCapacity) * 1.1)
             let key = keys[index]
             let _ = cache.cachedValue(forKey: key) {
                 String(describing: key)
@@ -231,15 +257,18 @@ final class ClockCacheTests: XCTestCase {
 
     func testRepeatingKeyAccess() throws {
         try testCacheHitRatio(
-            accesses: self.accesses,
             scenarios: [
-                (capacity: 1000, keys: 500, hitRate: 1.0, line: #line),
-                (capacity: 1000, keys: 1250, hitRate: 1.0, line: #line),
-                (capacity: 1000, keys: 1500, hitRate: 1.0, line: #line),
-                (capacity: 1000, keys: 2000, hitRate: 1.0, line: #line),
+                (capacity: 100, keys:  50, hitRate: 1.00, line: #line),
+                (capacity: 100, keys: 125, hitRate: 1.00, line: #line),
+                (capacity: 100, keys: 150, hitRate: 1.00, line: #line),
+                (capacity: 100, keys: 200, hitRate: 1.00, line: #line),
             ],
-            cache: { capacity in
-                ClockCache(totalCostLimit: capacity)
+            iterations: 1,
+            accesses: { capacity, keys in
+                10 * capacity
+            },
+            cache: { maximumCapacity, _ in
+                self.cache(maximumCapacity: maximumCapacity)
             },
             keys: { _ in
                 RepeatingKeyGenerator(
@@ -251,15 +280,18 @@ final class ClockCacheTests: XCTestCase {
 
     func testRepeatingRangeAccess() throws {
         try testCacheHitRatio(
-            accesses: self.accesses,
             scenarios: [
-                (capacity: 1000, keys: 500, hitRate: 1.0, line: #line),
-                (capacity: 1000, keys: 1250, hitRate: 1.0, line: #line),
-                (capacity: 1000, keys: 1500, hitRate: 1.0, line: #line),
-                (capacity: 1000, keys: 2000, hitRate: 1.0, line: #line),
+                (capacity: 100, keys:  50, hitRate: 1.00, line: #line),
+                (capacity: 100, keys: 125, hitRate: 0.00, line: #line),
+                (capacity: 100, keys: 150, hitRate: 0.00, line: #line),
+                (capacity: 100, keys: 200, hitRate: 0.00, line: #line),
             ],
-            cache: { capacity in
-                ClockCache(totalCostLimit: capacity)
+            iterations: 1,
+            accesses: { capacity, keys in
+                10 * capacity
+            },
+            cache: { maximumCapacity, _ in
+                self.cache(maximumCapacity: maximumCapacity)
             },
             keys: { keys in
                 RepeatingRangeKeyGenerator(
@@ -271,15 +303,18 @@ final class ClockCacheTests: XCTestCase {
 
     func testUniformRandomAccess() throws {
         try testCacheHitRatio(
-            accesses: self.accesses,
             scenarios: [
-                (capacity: 1000, keys: 500, hitRate: 1.0, line: #line),
-                (capacity: 1000, keys: 1250, hitRate: 1.0, line: #line),
-                (capacity: 1000, keys: 1500, hitRate: 1.0, line: #line),
-                (capacity: 1000, keys: 2000, hitRate: 1.0, line: #line),
+                (capacity: 100, keys:  50, hitRate: 1.00, line: #line),
+                (capacity: 100, keys: 125, hitRate: 0.80, line: #line),
+                (capacity: 100, keys: 150, hitRate: 0.66, line: #line),
+                (capacity: 100, keys: 200, hitRate: 0.50, line: #line),
             ],
-            cache: { capacity in
-                ClockCache(totalCostLimit: capacity)
+            iterations: 1,
+            accesses: { capacity, keys in
+                10 * capacity
+            },
+            cache: { maximumCapacity, _ in
+                self.cache(maximumCapacity: maximumCapacity)
             },
             keys: { keys in
                 UniformRandomKeyGenerator(
@@ -292,15 +327,18 @@ final class ClockCacheTests: XCTestCase {
 
     func testZipfianRandomAccess() throws {
         try testCacheHitRatio(
-            accesses: self.accesses,
             scenarios: [
-                (capacity: 1000, keys: 500, hitRate: 1.0, line: #line),
-                (capacity: 1000, keys: 1250, hitRate: 1.0, line: #line),
-                (capacity: 1000, keys: 1500, hitRate: 1.0, line: #line),
-                (capacity: 1000, keys: 2000, hitRate: 1.0, line: #line),
+                (capacity: 100, keys:  50, hitRate: 1.00, line: #line),
+                (capacity: 100, keys: 125, hitRate: 0.94, line: #line),
+                (capacity: 100, keys: 150, hitRate: 0.89, line: #line),
+                (capacity: 100, keys: 200, hitRate: 0.83, line: #line),
             ],
-            cache: { capacity in
-                ClockCache(totalCostLimit: capacity)
+            iterations: 1,
+            accesses: { capacity, keys in
+                10 * capacity
+            },
+            cache: { maximumCapacity, _ in
+                self.cache(maximumCapacity: maximumCapacity)
             },
             keys: { keys in
                 ZipfianRandomKeyGenerator(
@@ -314,7 +352,7 @@ final class ClockCacheTests: XCTestCase {
 
     static var allTests = [
         ("testInit", testInit),
-        ("testTotalCostLimit", testTotalCostLimit),
+        ("testMaximumCapacity", testMaximumCapacity),
         ("testIsEmpty", testIsEmpty),
         ("testCount", testCount),
         ("testRemoveValueForKey", testRemoveValueForKey),

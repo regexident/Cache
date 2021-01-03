@@ -12,7 +12,7 @@ final class LruPolicyTests: XCTestCase {
         var policy = Policy()
 
         for _ in 0..<count {
-            let _ = policy.insert()
+            let _ = policy.insert(payload: .default)
         }
 
         return policy
@@ -30,7 +30,7 @@ final class LruPolicyTests: XCTestCase {
     func testInsert() throws {
         var policy = self.policy()
 
-        let head = policy.insert()
+        let head = policy.insert(payload: .default)
 
         XCTAssertEqual(policy.deque.head, head.value)
         XCTAssertEqual(policy.deque.tail, head.value)
@@ -43,7 +43,7 @@ final class LruPolicyTests: XCTestCase {
         ])
         XCTAssertNil(policy.deque.firstFree)
 
-        let newHead = policy.insert()
+        let newHead = policy.insert(payload: .default)
 
         XCTAssertEqual(policy.deque.head, newHead.value)
         XCTAssertEqual(policy.deque.tail, head.value)
@@ -134,7 +134,7 @@ final class LruPolicyTests: XCTestCase {
     func testRemove() throws {
         var policy = self.policy(count: 3)
 
-        let index = try XCTUnwrap(policy.remove())
+        let (index, _) = try XCTUnwrap(policy.remove())
 
         XCTAssertEqual(index, 0)
     }
@@ -174,7 +174,7 @@ final class LruPolicyTests: XCTestCase {
         XCTAssertEqual(policy.deque.firstFree, nil)
 
         // depolicy head:
-        policy.remove(4)
+        let _ = policy.remove(4)
 
         XCTAssertEqual(policy.deque.head, 3)
         XCTAssertEqual(policy.deque.tail, 0)
@@ -204,7 +204,7 @@ final class LruPolicyTests: XCTestCase {
         XCTAssertEqual(policy.deque.firstFree, 4)
 
         // depolicy middle:
-        policy.remove(2)
+        let _ = policy.remove(2)
 
         XCTAssertEqual(policy.deque.head, 3)
         XCTAssertEqual(policy.deque.tail, 0)
@@ -230,7 +230,7 @@ final class LruPolicyTests: XCTestCase {
         XCTAssertEqual(policy.deque.firstFree, 2)
 
         // depolicy tail:
-        policy.remove(0)
+        let _ = policy.remove(0)
 
         XCTAssertEqual(policy.deque.head, 3)
         XCTAssertEqual(policy.deque.tail, 1)

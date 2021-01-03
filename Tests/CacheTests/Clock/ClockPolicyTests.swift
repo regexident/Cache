@@ -13,7 +13,7 @@ final class ClockPolicyTests: XCTestCase {
         var policy = Policy()
 
         for _ in 0..<count {
-            let _ = policy.insert()
+            let _ = policy.insert(payload: .default)
         }
 
         return policy
@@ -30,7 +30,7 @@ final class ClockPolicyTests: XCTestCase {
     func testInsertIntoEmptyPolicy() throws {
         var policy = self.policy()
 
-        let index = policy.insert()
+        let index = policy.insert(payload: .default)
 
         XCTAssertEqual(index.absoluteBitIndex, 0)
         XCTAssertEqual(policy.count, 1)
@@ -49,7 +49,7 @@ final class ClockPolicyTests: XCTestCase {
         XCTAssertEqual(policy.cursors.insert, 3)
         XCTAssertEqual(policy.cursors.remove, 0)
 
-        let index = policy.insert()
+        let index = policy.insert(payload: .default)
 
         XCTAssertEqual(index.absoluteBitIndex, 3)
         XCTAssertEqual(policy.count, 4)
@@ -68,7 +68,7 @@ final class ClockPolicyTests: XCTestCase {
             removeCursor: 3
         )
 
-        let index = policy.insert()
+        let index = policy.insert(payload: .default)
 
         XCTAssertEqual(index.absoluteBitIndex, 5)
         XCTAssertEqual(policy.count, 4)
@@ -87,7 +87,7 @@ final class ClockPolicyTests: XCTestCase {
             removeCursor: 3
         )
 
-        let index = policy.insert()
+        let index = policy.insert(payload: .default)
 
         XCTAssertEqual(index.absoluteBitIndex, 8)
         XCTAssertEqual(policy.count, 9)
@@ -136,7 +136,7 @@ final class ClockPolicyTests: XCTestCase {
             removeCursor: 3
         )
 
-        let index = try XCTUnwrap(policy.remove())
+        let (index, _) = try XCTUnwrap(policy.remove())
 
         XCTAssertEqual(index.absoluteBitIndex, 3)
         XCTAssertEqual(policy.count, 7)
@@ -155,7 +155,7 @@ final class ClockPolicyTests: XCTestCase {
         XCTAssertEqual(policy.cursors.insert, 3)
         XCTAssertEqual(policy.cursors.remove, 0)
 
-        let index = try XCTUnwrap(policy.remove())
+        let (index, _) = try XCTUnwrap(policy.remove())
 
         XCTAssertEqual(index.absoluteBitIndex, 0)
         XCTAssertEqual(policy.count, 2)
@@ -174,7 +174,7 @@ final class ClockPolicyTests: XCTestCase {
             removeCursor: 3
         )
 
-        let index = try XCTUnwrap(policy.remove())
+        let (index, _) = try XCTUnwrap(policy.remove())
 
         XCTAssertEqual(index.absoluteBitIndex, 3)
         XCTAssertEqual(policy.count, 2)
@@ -193,7 +193,7 @@ final class ClockPolicyTests: XCTestCase {
             removeCursor: 3
         )
 
-        policy.remove(.init(absoluteBitIndex: 1))
+        let _ = policy.remove(.init(absoluteBitIndex: 1))
 
         XCTAssertEqual(policy.count, 2)
         XCTAssertEqual(policy.occupiedBits, [0b00011000])
@@ -201,7 +201,7 @@ final class ClockPolicyTests: XCTestCase {
         XCTAssertEqual(policy.cursors.insert, 3)
         XCTAssertEqual(policy.cursors.remove, 3)
 
-        policy.remove(.init(absoluteBitIndex: 4))
+        let _ = policy.remove(.init(absoluteBitIndex: 4))
 
         XCTAssertEqual(policy.count, 1)
         XCTAssertEqual(policy.occupiedBits, [0b00001000])
@@ -209,7 +209,7 @@ final class ClockPolicyTests: XCTestCase {
         XCTAssertEqual(policy.cursors.insert, 3)
         XCTAssertEqual(policy.cursors.remove, 3)
 
-        policy.remove(.init(absoluteBitIndex: 3))
+        let _ = policy.remove(.init(absoluteBitIndex: 3))
 
         XCTAssertEqual(policy.count, 0)
         XCTAssertEqual(policy.occupiedBits, [0b00000000])
