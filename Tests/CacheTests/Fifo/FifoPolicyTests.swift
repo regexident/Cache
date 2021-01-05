@@ -6,20 +6,8 @@ final class FifoPolicyTests: XCTestCase {
     typealias Policy = CustomFifoPolicy<Int>
     typealias Index = Policy.Index
 
-    func policy(
-        count: Int = 0
-    ) -> Policy {
-        var policy = Policy()
-
-        for _ in 0..<count {
-            let _ = policy.insert(payload: .default)
-        }
-
-        return policy
-    }
-
     func testInit() throws {
-        let policy = self.policy()
+        let policy = Policy()
 
         XCTAssertNil(policy.deque.head)
         XCTAssertNil(policy.deque.tail)
@@ -28,7 +16,7 @@ final class FifoPolicyTests: XCTestCase {
     }
 
     func testInsert() throws {
-        var policy = self.policy()
+        var policy = Policy()
 
         let head = policy.insert(payload: .default)
 
@@ -63,7 +51,11 @@ final class FifoPolicyTests: XCTestCase {
     }
 
     func testUse() throws {
-        var policy = self.policy(count: 5)
+        var policy = Policy()
+
+        for _ in 0..<5 {
+            let _ = policy.insert(payload: .default)
+        }
 
         XCTAssertEqual(policy.deque.head, 4)
         XCTAssertEqual(policy.deque.tail, 0)
@@ -97,7 +89,9 @@ final class FifoPolicyTests: XCTestCase {
         XCTAssertEqual(policy.deque.firstFree, nil)
 
         let index: Index = .init(2)
-        policy.use(index, payload: .default)
+        let newIndex = policy.use(index, payload: .default)
+
+        XCTAssertEqual(index, newIndex)
 
         XCTAssertEqual(policy.deque.head, 4)
         XCTAssertEqual(policy.deque.tail, 0)
@@ -132,7 +126,11 @@ final class FifoPolicyTests: XCTestCase {
     }
 
     func testRemove() throws {
-        var policy = self.policy(count: 3)
+        var policy = Policy()
+
+        for _ in 0..<3 {
+            let _ = policy.insert(payload: .default)
+        }
 
         let (index, _) = try XCTUnwrap(policy.remove())
 
@@ -140,7 +138,11 @@ final class FifoPolicyTests: XCTestCase {
     }
 
     func testRemoveIndex() throws {
-        var policy = self.policy(count: 5)
+        var policy = Policy()
+
+        for _ in 0..<5 {
+            let _ = policy.insert(payload: .default)
+        }
 
         XCTAssertEqual(policy.deque.head, 4)
         XCTAssertEqual(policy.deque.tail, 0)
@@ -253,7 +255,11 @@ final class FifoPolicyTests: XCTestCase {
     }
 
     func testRemoveAll() throws {
-        var policy = self.policy(count: 3)
+        var policy = Policy()
+
+        for _ in 0..<3 {
+            let _ = policy.insert(payload: .default)
+        }
 
         XCTAssertEqual(policy.deque.head, 2)
         XCTAssertEqual(policy.deque.tail, 0)
@@ -287,7 +293,11 @@ final class FifoPolicyTests: XCTestCase {
     }
 
     func testRemoveAllKeepingCapacity() throws {
-        var policy = self.policy(count: 3)
+        var policy = Policy()
+
+        for _ in 0..<3 {
+            let _ = policy.insert(payload: .default)
+        }
 
         XCTAssertEqual(policy.deque.head, 2)
         XCTAssertEqual(policy.deque.tail, 0)

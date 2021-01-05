@@ -7,20 +7,8 @@ final class ClockPolicyTests: XCTestCase {
     typealias Policy = CustomClockPolicy<Bits>
     typealias Index = Policy.Index
 
-    func policy(
-        count: Int = 0
-    ) -> Policy {
-        var policy = Policy()
-
-        for _ in 0..<count {
-            let _ = policy.insert(payload: .default)
-        }
-
-        return policy
-    }
-
     func testInit() throws {
-        let policy = self.policy()
+        let policy = Policy()
 
         XCTAssertEqual(policy.count, 0)
         XCTAssertEqual(policy.occupiedBits, [])
@@ -28,7 +16,7 @@ final class ClockPolicyTests: XCTestCase {
     }
 
     func testInsertIntoEmptyPolicy() throws {
-        var policy = self.policy()
+        var policy = Policy()
 
         let index = policy.insert(payload: .default)
 
@@ -41,7 +29,11 @@ final class ClockPolicyTests: XCTestCase {
     }
 
     func testInsertIntoDenselyFilledPolicy() throws {
-        var policy = self.policy(count: 3)
+        var policy = Policy()
+
+        for _ in 0..<3 {
+            let _ = policy.insert(payload: .default)
+        }
 
         XCTAssertEqual(policy.count, 3)
         XCTAssertEqual(policy.occupiedBits, [0b00000111])
@@ -153,7 +145,11 @@ final class ClockPolicyTests: XCTestCase {
     }
 
     func testRemoveFromDenselyFilledPolicy() throws {
-        var policy = self.policy(count: 3)
+        var policy = Policy()
+
+        for _ in 0..<3 {
+            let _ = policy.insert(payload: .default)
+        }
 
         XCTAssertEqual(policy.count, 3)
         XCTAssertEqual(policy.occupiedBits, [0b00000111])
@@ -225,7 +221,11 @@ final class ClockPolicyTests: XCTestCase {
     }
 
     func testRemoveAll() throws {
-        var policy = self.policy(count: 3)
+        var policy = Policy()
+
+        for _ in 0..<3 {
+            let _ = policy.insert(payload: .default)
+        }
 
         policy.removeAll()
 
@@ -238,7 +238,11 @@ final class ClockPolicyTests: XCTestCase {
     }
 
     func testRemoveAllKeepingCapacity() throws {
-        var policy = self.policy(count: 3)
+        var policy = Policy()
+
+        for _ in 0..<3 {
+            let _ = policy.insert(payload: .default)
+        }
 
         let capacity = policy.capacity
 
