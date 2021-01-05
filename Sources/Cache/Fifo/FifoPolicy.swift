@@ -14,14 +14,6 @@ where
     public typealias Payload = NoPayload
 
     internal typealias Deque = BufferedDeque<Payload, RawIndex>
-
-    // Since there is only a single possible instance
-    // of `ClockPayload` (aka `NoPayload`) we
-    // access it via `Self.globalPayload` to make
-    // things more explicit.
-    private static var globalPayload: Payload {
-        .init()
-    }
     
     public var isEmpty: Bool {
         self.deque.isEmpty

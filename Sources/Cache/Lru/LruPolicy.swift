@@ -25,14 +25,6 @@ where
     internal typealias Deque = BufferedDeque<Payload, RawIndex>
     internal typealias Node = Deque.Node
 
-    // Since there is only a single possible instance
-    // of `Payload` (aka `NoPayload`) we
-    // access it via `Self.globalPayload` to make
-    // things more explicit.
-    private static var globalPayload: Payload {
-        .init()
-    }
-    
     public var isEmpty: Bool {
         self.count == 0
     }
