@@ -22,7 +22,10 @@ public protocol CachePolicy {
     /// The policy's payload type.
     associatedtype Payload
 
+    /// A Boolean value indicating whether the policy is empty.
     var isEmpty: Bool { get }
+
+    /// The number of indices in the policy.
     var count: Int { get }
 
     /// Returns `true` if the policy has enough capacity to
@@ -32,23 +35,49 @@ public protocol CachePolicy {
     /// - Parameter payload: The additional payload to accomodate.
     func hasCapacity(forPayload payload: Payload?) -> Bool
 
+    /// Returns the lazy state of an index.
+    ///
+    /// - Note:
+    ///   This method must only be called for indices that
+    ///   are contained in the cache at the given time.
+    ///
+    /// - Parameter index: The index to inspect.
     func state(of index: Index) -> CachePolicyIndexState
 
     /// Inserts a new index into the policy.
+    ///
+    /// - Parameter payload: The payload to attach to the index
     mutating func insert(payload: Payload) -> Index
 
     /// Marks a index as used.
+    ///
+    /// - Note:
+    ///   This method must only be called for indices that
+    ///   are contained in the cache at the given time.
+    ///
+    /// - Parameters:
+    ///   - index: The index to mark as used
+    ///   - payload: The payload to attach to the index
     mutating func use(
         _ index: Index,
         payload: Payload
     ) -> Index
 
-    /// Removes a index chosen by the policy.
+    /// Removes an index chosen by the policy, if possible.
     mutating func remove() -> (index: Index, payload: Payload)?
 
-    /// Removed a index.
+    /// Removes a index.
+    ///
+    /// - Note:
+    ///   This method must only be called for indices that
+    ///   are contained in the cache at the given time.
+    ///
+    /// - Parameter index: The index to remove
     mutating func remove(_ index: Index) -> Payload
 
+    /// Removed expired indices, calling `callback` for each of them.
+    ///
+    /// - Parameter evictionCallback: The eviction callback.
     mutating func removeExpired(
         _ evictionCallback: (Index) -> Void
     )
@@ -57,10 +86,9 @@ public protocol CachePolicy {
     mutating func removeAll()
 
     /// Removes all indices from the policy.
-    /// - Parameters:
-    ///   - keepCapacity:
-    ///     Pass `true` to keep the existing capacity of
-    ///     the policy after removing its indices.
+    ///
+    /// - Parameter keepCapacity: Pass `true` to keep the existing capacity
+    ///                           of the policy after removing its indices.
     mutating func removeAll(
         keepingCapacity keepCapacity: Bool
     )
