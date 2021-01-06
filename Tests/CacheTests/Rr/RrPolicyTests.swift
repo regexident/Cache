@@ -17,12 +17,29 @@ final class RrPolicyTests: XCTestCase {
         XCTAssertEqual(policy.chunks, [])
     }
 
+    func testHasCapacity() throws {
+        let policy = Policy()
+
+        XCTAssertTrue(policy.hasCapacity(forPayload: nil))
+        XCTAssertTrue(policy.hasCapacity(forPayload: .default))
+    }
+
+    func testStateOf() throws {
+        var policy = Policy()
+
+        let index = policy.insert(payload: .default)
+
+        XCTAssertEqual(policy.state(of: index), .alive)
+    }
+
     func testInsertIntoEmptyPolicy() throws {
         var policy = Policy()
 
         let index = policy.insert(payload: .default)
 
         XCTAssertEqual(index.absoluteBitIndex, 0)
+
+        XCTAssertFalse(policy.isEmpty)
         XCTAssertEqual(policy.count, 1)
         XCTAssertEqual(policy.chunkBits, [0b00000001])
     }
@@ -34,12 +51,15 @@ final class RrPolicyTests: XCTestCase {
             let _ = policy.insert(payload: .default)
         }
 
+        XCTAssertFalse(policy.isEmpty)
         XCTAssertEqual(policy.count, 3)
         XCTAssertEqual(policy.chunkBits, [0b00000111])
 
         let index = policy.insert(payload: .default)
 
         XCTAssertEqual(index.absoluteBitIndex, 3)
+
+        XCTAssertFalse(policy.isEmpty)
         XCTAssertEqual(policy.count, 4)
         XCTAssertEqual(policy.chunkBits, [0b00001111])
     }
@@ -150,6 +170,20 @@ final class RrPolicyTests: XCTestCase {
 
         XCTAssertEqual(policy.count, 0)
         XCTAssertEqual(policy.chunkBits, [0b00000000])
+    }
+
+    func testRemoveExpired() throws {
+        var policy = Policy()
+
+        for _ in 0..<3 {
+            let _ = policy.insert(payload: .default)
+        }
+
+        policy.removeExpired { index in
+            XCTFail("Indices should not expire")
+        }
+
+        XCTAssertEqual(policy.count, 3)
     }
 
     func testRemoveAll() throws {

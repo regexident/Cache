@@ -15,10 +15,28 @@ final class LruPolicyTests: XCTestCase {
         XCTAssertNil(policy.deque.firstFree)
     }
 
+    func testHasCapacity() throws {
+        let policy = Policy()
+
+        XCTAssertTrue(policy.hasCapacity(forPayload: nil))
+        XCTAssertTrue(policy.hasCapacity(forPayload: .default))
+    }
+
+    func testStateOf() throws {
+        var policy = Policy()
+
+        let index = policy.insert(payload: .default)
+
+        XCTAssertEqual(policy.state(of: index), .alive)
+    }
+
     func testInsert() throws {
         var policy = Policy()
 
         let head = policy.insert(payload: .default)
+
+        XCTAssertFalse(policy.isEmpty)
+        XCTAssertEqual(policy.count, 1)
 
         XCTAssertEqual(policy.deque.head, head.rawValue)
         XCTAssertEqual(policy.deque.tail, head.rawValue)
@@ -32,6 +50,9 @@ final class LruPolicyTests: XCTestCase {
         XCTAssertNil(policy.deque.firstFree)
 
         let newHead = policy.insert(payload: .default)
+
+        XCTAssertFalse(policy.isEmpty)
+        XCTAssertEqual(policy.count, 2)
 
         XCTAssertEqual(policy.deque.head, newHead.rawValue)
         XCTAssertEqual(policy.deque.tail, head.rawValue)
@@ -252,6 +273,20 @@ final class LruPolicyTests: XCTestCase {
             .free(.init(nextFree: nil)),
         ])
         XCTAssertEqual(policy.deque.firstFree, 0)
+    }
+
+    func testRemoveExpired() throws {
+        var policy = Policy()
+
+        for _ in 0..<3 {
+            let _ = policy.insert(payload: .default)
+        }
+
+        policy.removeExpired { index in
+            XCTFail("Indices should not expire")
+        }
+
+        XCTAssertEqual(policy.count, 3)
     }
 
     func testRemoveAll() throws {

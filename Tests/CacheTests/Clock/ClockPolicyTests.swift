@@ -10,9 +10,25 @@ final class ClockPolicyTests: XCTestCase {
     func testInit() throws {
         let policy = Policy()
 
+        XCTAssertTrue(policy.isEmpty)
         XCTAssertEqual(policy.count, 0)
         XCTAssertEqual(policy.occupiedBits, [])
         XCTAssertEqual(policy.referencedBits, [])
+    }
+
+    func testHasCapacity() throws {
+        let policy = Policy()
+
+        XCTAssertTrue(policy.hasCapacity(forPayload: nil))
+        XCTAssertTrue(policy.hasCapacity(forPayload: .default))
+    }
+
+    func testStateOf() throws {
+        var policy = Policy()
+
+        let index = policy.insert(payload: .default)
+
+        XCTAssertEqual(policy.state(of: index), .alive)
     }
 
     func testInsertIntoEmptyPolicy() throws {
@@ -21,6 +37,8 @@ final class ClockPolicyTests: XCTestCase {
         let index = policy.insert(payload: .default)
 
         XCTAssertEqual(index.absoluteBitIndex, 0)
+
+        XCTAssertFalse(policy.isEmpty)
         XCTAssertEqual(policy.count, 1)
         XCTAssertEqual(policy.occupiedBits, [0b00000001])
         XCTAssertEqual(policy.referencedBits, [0b00000001])
@@ -218,6 +236,20 @@ final class ClockPolicyTests: XCTestCase {
         XCTAssertEqual(policy.referencedBits, [0b00000000])
         XCTAssertEqual(policy.cursors.insert, .init(3))
         XCTAssertEqual(policy.cursors.remove, .init(3))
+    }
+
+    func testRemoveExpired() throws {
+        var policy = Policy()
+
+        for _ in 0..<3 {
+            let _ = policy.insert(payload: .default)
+        }
+
+        policy.removeExpired { index in
+            XCTFail("Indices should not expire")
+        }
+
+        XCTAssertEqual(policy.count, 3)
     }
 
     func testRemoveAll() throws {

@@ -21,28 +21,16 @@ final class RrCacheTests: XCTestCase {
         seed: UInt64 = 0
     ) -> CustomCache<Key, Value, Policy> {
         .init { minimumCapacity in
-            self.policy(
-                minimumCapacity: minimumCapacity,
-                maximumCapacity: maximumCapacity,
-                seed: seed
+            .init(
+                base: .init(
+                    minimumCapacity: minimumCapacity,
+                    generator: SplitMix64(
+                        seed: seed
+                    )
+                ),
+                maximumCapacity: maximumCapacity
             )
         }
-    }
-
-    func policy(
-        minimumCapacity: Int = 0,
-        maximumCapacity: Int,
-        seed: UInt64 = 0
-    ) -> Policy {
-        .init(
-            base: .init(
-                minimumCapacity: minimumCapacity,
-                generator: SplitMix64(
-                    seed: seed
-                )
-            ),
-            maximumCapacity: maximumCapacity
-        )
     }
 
     func testInit() throws {

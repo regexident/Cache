@@ -19,23 +19,13 @@ final class FifoCacheTests: XCTestCase {
         maximumCapacity: Int
     ) -> CustomCache<Key, Value, Policy> {
         .init(defaultPayload: .init()) { minimumCapacity in
-            self.policy(
-                minimumCapacity: minimumCapacity,
+            .init(
+                base: .init(
+                    minimumCapacity: minimumCapacity
+                ),
                 maximumCapacity: maximumCapacity
             )
         }
-    }
-
-    func policy(
-        minimumCapacity: Int = 0,
-        maximumCapacity: Int
-    ) -> Policy {
-        .init(
-            base: .init(
-                minimumCapacity: minimumCapacity
-            ),
-            maximumCapacity: maximumCapacity
-        )
     }
 
     func testInit() throws {
