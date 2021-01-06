@@ -76,6 +76,22 @@ where
         totalCostLimit: Cost? = nil,
         defaultCost: Cost
     ) {
+        self.init(
+            minimumCapacity: minimumCapacity,
+            totalCostLimit: totalCostLimit,
+            defaultCost: defaultCost,
+            policy: { minimumCapacity in
+                .init(minimumCapacity: minimumCapacity)
+            }
+        )
+    }
+
+    internal init(
+        minimumCapacity: Int? = nil,
+        totalCostLimit: Cost? = nil,
+        defaultCost: Cost,
+        policy policyProvider: (Int) -> Policy
+    ) {
         let minimumCapacity = minimumCapacity ?? 0
 
         self.init(
@@ -84,11 +100,11 @@ where
             totalCost: .zero,
             indicesByKey: .init(minimumCapacity: minimumCapacity),
             elementsByIndex: .init(minimumCapacity: minimumCapacity),
-            policy: .init(minimumCapacity: minimumCapacity)
+            policy: policyProvider(minimumCapacity)
         )
     }
 
-    fileprivate init(
+    private init(
         totalCostLimit: Cost?,
         defaultCost: Cost,
         totalCost: Cost,

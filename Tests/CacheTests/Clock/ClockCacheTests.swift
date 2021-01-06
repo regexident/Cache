@@ -1,5 +1,8 @@
 import XCTest
 
+import CacheKeyGenerators
+import PseudoRandom
+
 @testable import Cache
 
 final class ClockCacheTests: XCTestCase {
@@ -10,6 +13,8 @@ final class ClockCacheTests: XCTestCase {
     typealias Bits = UInt8
     typealias Policy = CustomClockPolicy<Bits>
     typealias Cache = CustomCache<Key, Value, Cost, Policy>
+
+    let accesses: Int = 100_000
 
     func cache(
         totalCostLimit: Cost? = nil,
@@ -222,36 +227,89 @@ final class ClockCacheTests: XCTestCase {
         }
     }
 
-    func testCacheMissRatio() throws {
-        let capacity: Int = 10
-        let keyCount: Int = 100
-        let accessCount: Int = 1000
+    // MARK: - Access Patterns
 
-        let keys: Range<Int> = 0..<keyCount
-        var keyFrequencies: [Key: Int] = [:]
-        var accessedKeys: Set<Key> = []
-
-        var cache = Cache(totalCostLimit: capacity)
-        var cacheMisses: [Key: Int] = [:]
-
-        for i in 0..<accessCount {
-            let index = i % Int(Double(capacity) * 1.25)
-
-            let key = keys[index % keyCount]
-
-            keyFrequencies[key, default: 0] += 1
-            let _ = cache.cachedValue(forKey: key) {
-                cacheMisses[key, default: 0] += 1
-                return String(describing: key)
+    func testRepeatingKeyAccess() throws {
+        try testCacheHitRatio(
+            accesses: self.accesses,
+            scenarios: [
+                (capacity: 1000, keys: 500, hitRate: 1.0, line: #line),
+                (capacity: 1000, keys: 1250, hitRate: 1.0, line: #line),
+                (capacity: 1000, keys: 1500, hitRate: 1.0, line: #line),
+                (capacity: 1000, keys: 2000, hitRate: 1.0, line: #line),
+            ],
+            cache: { capacity in
+                ClockCache(totalCostLimit: capacity)
+            },
+            keys: { _ in
+                RepeatingKeyGenerator(
+                    key: 0
+                )
             }
-            accessedKeys.insert(key)
-        }
+        )
+    }
 
-        // Subtract `count` to filter out initial compulsory cache misses:
-        let totalCacheMisses = cacheMisses.values.reduce(0, +) - cacheMisses.count
-        let cacheMissRatio: Double = 1.0 - (1.0 / Double(accessCount) * Double(totalCacheMisses))
+    func testRepeatingRangeAccess() throws {
+        try testCacheHitRatio(
+            accesses: self.accesses,
+            scenarios: [
+                (capacity: 1000, keys: 500, hitRate: 1.0, line: #line),
+                (capacity: 1000, keys: 1250, hitRate: 1.0, line: #line),
+                (capacity: 1000, keys: 1500, hitRate: 1.0, line: #line),
+                (capacity: 1000, keys: 2000, hitRate: 1.0, line: #line),
+            ],
+            cache: { capacity in
+                ClockCache(totalCostLimit: capacity)
+            },
+            keys: { keys in
+                RepeatingRangeKeyGenerator(
+                    range: 0..<keys
+                )
+            }
+        )
+    }
 
-        XCTAssertLessThanOrEqual(cacheMissRatio, 0.015)
+    func testUniformRandomAccess() throws {
+        try testCacheHitRatio(
+            accesses: self.accesses,
+            scenarios: [
+                (capacity: 1000, keys: 500, hitRate: 1.0, line: #line),
+                (capacity: 1000, keys: 1250, hitRate: 1.0, line: #line),
+                (capacity: 1000, keys: 1500, hitRate: 1.0, line: #line),
+                (capacity: 1000, keys: 2000, hitRate: 1.0, line: #line),
+            ],
+            cache: { capacity in
+                ClockCache(totalCostLimit: capacity)
+            },
+            keys: { keys in
+                UniformRandomKeyGenerator(
+                    range: 0..<keys,
+                    generator: SplitMix64()
+                )
+            }
+        )
+    }
+
+    func testZipfianRandomAccess() throws {
+        try testCacheHitRatio(
+            accesses: self.accesses,
+            scenarios: [
+                (capacity: 1000, keys: 500, hitRate: 1.0, line: #line),
+                (capacity: 1000, keys: 1250, hitRate: 1.0, line: #line),
+                (capacity: 1000, keys: 1500, hitRate: 1.0, line: #line),
+                (capacity: 1000, keys: 2000, hitRate: 1.0, line: #line),
+            ],
+            cache: { capacity in
+                ClockCache(totalCostLimit: capacity)
+            },
+            keys: { keys in
+                ZipfianRandomKeyGenerator(
+                    range: 0..<keys,
+                    theta: 0.99,
+                    generator: SplitMix64()
+                )
+            }
+        )
     }
 
     static var allTests = [
@@ -265,6 +323,9 @@ final class ClockCacheTests: XCTestCase {
         ("testUpdateValueForKey", testUpdateValueForKey),
         ("testValueForKey", testValueForKey),
         ("testSmoke", testSmoke),
-        ("testCacheMissRatio", testCacheMissRatio),
+        ("testRepeatingKeyAccess", testRepeatingKeyAccess),
+        ("testRepeatingRangeAccess", testRepeatingRangeAccess),
+        ("testUniformRandomAccess", testUniformRandomAccess),
+        ("testZipfianRandomAccess", testZipfianRandomAccess),
     ]
 }

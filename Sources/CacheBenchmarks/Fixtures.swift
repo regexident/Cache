@@ -138,7 +138,7 @@ func runWith<P>(policy: P.Type, capacity: Int, keys: [Key]) -> Int
 where
     P: CachePolicy
 {
-    return cacheMissesUsing(
+    return cacheHitsUsing(
         policy: P.self,
         capacity: capacity,
         keys: keys
@@ -155,7 +155,7 @@ func measureTime(
 }
 
 @discardableResult
-func cacheMissesUsing<P>(
+func cacheHitsUsing<P>(
     policy: P.Type,
     capacity: Int,
     keys: [Key]
@@ -167,7 +167,7 @@ where
 
     var cache = Cache(totalCostLimit: capacity)
 
-    var misses: Int = 0
+    var hits: Int = 0
 
     for key in keys {
         var didMiss: Bool = false
@@ -175,12 +175,12 @@ where
             key
         }
 
-        if didMiss {
-            misses += 1
+        if !didMiss {
+            hits += 1
         }
     }
 
-    return misses
+    return hits
 }
 
 func frequencies(keys: [Int]) -> [(key: Int, frequency: Int)] {

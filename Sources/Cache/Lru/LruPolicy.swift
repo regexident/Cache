@@ -14,7 +14,7 @@ where
     Cost: Comparable & Numeric,
     Index: BinaryInteger
 
-public typealias LruPolicy = CustomLruPolicy;
+public typealias LruPolicy = CustomLruPolicy<UInt32>;
 
 public struct CustomLruPolicy<RawIndex>: CachePolicy
 where

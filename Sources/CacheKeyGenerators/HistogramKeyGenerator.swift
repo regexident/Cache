@@ -7,29 +7,32 @@ import Foundation
 import PseudoRandom
 
 /// A generator that returns values according to a provided histogram distribution.
-public struct HistogramKeyGenerator: IteratorProtocol {
+public struct HistogramKeyGenerator<Generator>: IteratorProtocol
+where
+    Generator: RandomNumberGenerator
+{
     public typealias Element = Int
 
     public let histogram: [Element: Double]
 
     private let area: Double
-    private var prng: SplitMix64
+    private var generator: Generator
 
     public init(
         histogram: [Element: Double],
-        prng: SplitMix64
+        generator: Generator
     ) {
         assert(histogram.values.allSatisfy { $0 > 0.0 })
 
         self.histogram = histogram
         self.area = histogram.values.reduce(0.0, +)
-        self.prng = prng
+        self.generator = generator
     }
 
     public mutating func next() -> Element? {
         let sampleWeight = Double.random(
             in: (0.0)...(1.0),
-            using: &self.prng
+            using: &self.generator
         )
         var weightSum: Double = 0.0
         for (key, weight) in self.histogram {

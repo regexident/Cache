@@ -5,12 +5,16 @@
 import Foundation
 
 /// A generator that always returns the same integer value.
-public struct ConstantKeyGenerator: IteratorProtocol {
+public struct RepeatingKeyGenerator: IteratorProtocol {
     public typealias Element = Int
 
     public let key: Element
 
-    public func next() -> Element? {
+    public init(key: Element) {
+        self.key = key
+    }
+
+    public mutating func next() -> Element? {
         self.key
     }
 }

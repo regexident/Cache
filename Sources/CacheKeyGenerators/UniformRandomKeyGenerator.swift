@@ -7,22 +7,25 @@ import Foundation
 import PseudoRandom
 
 /// A generator that returns values according to a uniform distribution.
-public struct UniformKeyGenerator: IteratorProtocol {
+public struct UniformRandomKeyGenerator<Generator>: IteratorProtocol
+where
+    Generator: RandomNumberGenerator
+{
     public typealias Element = Int
 
     public let range: Range<Element>
 
-    private var prng: SplitMix64
+    private var generator: Generator
 
     public init(
         range: Range<Element>,
-        prng: SplitMix64
+        generator: Generator
     ) {
         self.range = range
-        self.prng = prng
+        self.generator = generator
     }
 
     public mutating func next() -> Element? {
-        self.range.randomElement(using: &self.prng)
+        self.range.randomElement(using: &self.generator)
     }
 }

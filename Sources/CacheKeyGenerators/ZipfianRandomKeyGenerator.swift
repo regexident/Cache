@@ -8,7 +8,10 @@ import PseudoRandom
 
 // Source: "Quickly Generating Billion-Record Synthetic Databases", Jim Gray et al, SIGMOD 1994
 /// A generator that returns values according to a uniform distribution.
-public struct ZipfianKeyGenerator: IteratorProtocol {
+public struct ZipfianRandomKeyGenerator<Generator>: IteratorProtocol
+where
+    Generator: RandomNumberGenerator
+{
     public typealias Element = Int
 
     public let range: Range<Element>
@@ -18,12 +21,12 @@ public struct ZipfianKeyGenerator: IteratorProtocol {
     public let theta: Double
     public let zeta2theta: Double
 
-    private var prng: SplitMix64
+    private var generator: Generator
 
     public init(
         range: Range<Int>,
         theta: Double,
-        prng: SplitMix64
+        generator: Generator
     ) {
         let n = range.count
 
@@ -44,7 +47,7 @@ public struct ZipfianKeyGenerator: IteratorProtocol {
             eta: eta,
             theta: theta,
             zeta2theta: zeta2theta,
-            prng: prng
+            generator: generator
         )
     }
 
@@ -55,7 +58,7 @@ public struct ZipfianKeyGenerator: IteratorProtocol {
         eta: Double,
         theta: Double,
         zeta2theta: Double,
-        prng: SplitMix64
+        generator: Generator
     ) {
         self.range = range
         self.theta = theta
@@ -64,7 +67,7 @@ public struct ZipfianKeyGenerator: IteratorProtocol {
         self.alpha = alpha
         self.eta = eta
 
-        self.prng = prng
+        self.generator = generator
     }
 
     private static func zeta(
@@ -94,7 +97,7 @@ public struct ZipfianKeyGenerator: IteratorProtocol {
     public mutating func next() -> Element? {
         let u = Double.random(
             in: (0.0)...(1.0),
-            using: &self.prng
+            using: &self.generator
         )
         let uz = u * self.zeta
 
