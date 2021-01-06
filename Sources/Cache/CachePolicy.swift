@@ -58,10 +58,7 @@ public protocol CachePolicy {
     /// - Parameters:
     ///   - index: The index to mark as used
     ///   - payload: The payload to attach to the index
-    mutating func use(
-        _ index: Index,
-        payload: Payload
-    ) -> Index
+    mutating func use(_ index: Index, payload: Payload) -> Index
 
     /// Removes an index chosen by the policy, if possible.
     mutating func remove() -> (index: Index, payload: Payload)?
@@ -78,9 +75,7 @@ public protocol CachePolicy {
     /// Removed expired indices, calling `callback` for each of them.
     ///
     /// - Parameter evictionCallback: The eviction callback.
-    mutating func removeExpired(
-        _ evictionCallback: (Index) -> Void
-    )
+    mutating func removeExpired(_ evictionCallback: (Index) -> Void)
 
     /// Removes all indices from the policy.
     mutating func removeAll()
@@ -89,7 +84,5 @@ public protocol CachePolicy {
     ///
     /// - Parameter keepCapacity: Pass `true` to keep the existing capacity
     ///                           of the policy after removing its indices.
-    mutating func removeAll(
-        keepingCapacity keepCapacity: Bool
-    )
+    mutating func removeAll(keepingCapacity keepCapacity: Bool)
 }
