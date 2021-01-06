@@ -4,7 +4,7 @@
 
 public typealias CacheCost = Comparable & AdditiveArithmetic & Numeric
 
-public struct Cache<Key, Value, Cost, Policy>
+public struct CustomCache<Key, Value, Cost, Policy>
 where
     Key: Hashable,
     Policy: CachePolicy,
@@ -12,25 +12,25 @@ where
 {
     public typealias Element = (key: Key, value: Value)
 
-    internal typealias Token = Policy.Token
+    internal typealias Index = Policy.Index
 
-    fileprivate struct ElementContainer {
+    internal struct ElementContainer {
         var cost: Cost
         var element: Element
     }
 
     /// Complexity: O(`1`).
     public var isEmpty: Bool {
-        self.tokensByKey.isEmpty
+        self.indicesByKey.isEmpty
     }
 
     /// Complexity: O(`1`).
     public var count: Int {
-        self.tokensByKey.count
+        self.indicesByKey.count
     }
 
     public var capacity: Int {
-        self.tokensByKey.capacity
+        self.indicesByKey.capacity
     }
 
     public var totalCostLimit: Cost? {
@@ -49,9 +49,9 @@ where
 
     public private(set) var totalCost: Cost
     
-    fileprivate private(set) var tokensByKey: [Key: Token]
-    fileprivate private(set) var elementsByToken: [Token: ElementContainer]
-    fileprivate private(set) var policy: Policy
+    internal fileprivate(set) var indicesByKey: [Key: Index]
+    internal fileprivate(set) var elementsByIndex: [Index: ElementContainer]
+    internal fileprivate(set) var policy: Policy
 
     /// Creates an empty cache with preallocated space
     /// for at least the specified number of values.
@@ -82,8 +82,8 @@ where
             totalCostLimit: totalCostLimit,
             defaultCost: defaultCost,
             totalCost: .zero,
-            tokensByKey: .init(minimumCapacity: minimumCapacity),
-            elementsByToken: .init(minimumCapacity: minimumCapacity),
+            indicesByKey: .init(minimumCapacity: minimumCapacity),
+            elementsByIndex: .init(minimumCapacity: minimumCapacity),
             policy: .init(minimumCapacity: minimumCapacity)
         )
     }
@@ -92,8 +92,8 @@ where
         totalCostLimit: Cost?,
         defaultCost: Cost,
         totalCost: Cost,
-        tokensByKey: [Key: Token],
-        elementsByToken: [Token: ElementContainer],
+        indicesByKey: [Key: Index],
+        elementsByIndex: [Index: ElementContainer],
         policy: Policy
     ) {
         if let totalCostLimit = totalCostLimit {
@@ -103,31 +103,25 @@ where
         self.totalCostLimit = totalCostLimit
         self.defaultCost = defaultCost
         self.totalCost = totalCost
-        self.tokensByKey = tokensByKey
-        self.elementsByToken = elementsByToken
+        self.indicesByKey = indicesByKey
+        self.elementsByIndex = elementsByIndex
         self.policy = policy
     }
 
     public mutating func value(
         forKey key: Key
     ) -> Value? {
-        guard let token = self.tokensByKey[key] else {
+        guard let index = self.indicesByKey[key] else {
             return nil
         }
 
-        guard let container = self.elementsByToken[token] else {
-            return nil
+        guard let container = self.elementsByIndex[index] else {
+            fatalError("Expected element, found nil")
         }
 
-        let newToken = self.policy.use(token)
+        self.policy.use(index)
 
-        if newToken != token {
-            self.tokensByKey[key] = newToken
-            let container = self.elementsByToken.removeValue(
-                forKey: token
-            )
-            self.elementsByToken[newToken] = container
-        }
+        assert(self.isValid())
 
         return container.element.value
     }
@@ -135,12 +129,12 @@ where
     public func peekValue(
         forKey key: Key
     ) -> Value? {
-        guard let token = self.tokensByKey[key] else {
+        guard let index = self.indicesByKey[key] else {
             return nil
         }
 
-        guard let container = self.elementsByToken[token] else {
-            return nil
+        guard let container = self.elementsByIndex[index] else {
+            fatalError("Expected element, found nil")
         }
 
         return container.element.value
@@ -165,45 +159,36 @@ where
         forKey key: Key,
         cost: Cost? = nil
     ) -> Value? {
-        let oldValue = self.removeValue(forKey: key)
-
         let cost = cost ?? self.defaultCost
 
-        // Evict excessive elements, if necessary:
-
-        if let totalCostLimit = self.totalCostLimit {
-            // Remove one more, to make space for new element:
-
-            self.removeWhile(
-                totalCostAbove: totalCostLimit - cost
+        if let index = self.indicesByKey[key] {
+            return self.replaceValue(
+                value,
+                forKey: key,
+                index: index,
+                cost: cost
             )
+        } else {
+            self.insertValue(
+                value,
+                forKey: key,
+                cost: cost
+            )
+            return nil
         }
-
-        let token = self.policy.insert()
-
-        self.tokensByKey[key] = token
-
-        self.elementsByToken[token] = .init(
-            cost: cost,
-            element: (key: key, value: value)
-        )
-
-        self.totalCost += cost
-
-        return oldValue
     }
 
     @discardableResult
     public mutating func removeValue(
         forKey key: Key
     ) -> Value? {
-        guard let token = self.tokensByKey.removeValue(forKey: key) else {
+        guard let index = self.indicesByKey[key] else {
             return nil
         }
 
-        guard let element = self.removeValue(forToken: token) else {
-            return nil
-        }
+        self.policy.remove(index)
+
+        let element = self.removeValue(forIndex: index)
 
         return element.value
     }
@@ -214,11 +199,12 @@ where
             return nil
         }
 
-        guard let token = self.policy.next() else {
-            return nil
+        guard let index = self.policy.remove() else {
+            fatalError("Expected index, found nil")
         }
 
-        return self.removeValue(forToken: token)
+        let removed = self.removeValue(forIndex: index)
+        return removed
     }
 
     public mutating func removeAll() {
@@ -228,51 +214,132 @@ where
     public mutating func removeAll(
         keepingCapacity keepCapacity: Bool
     ) {
-        self.tokensByKey.removeAll(keepingCapacity: keepCapacity)
-        self.elementsByToken.removeAll(keepingCapacity: keepCapacity)
+        self.indicesByKey.removeAll(keepingCapacity: keepCapacity)
+        self.elementsByIndex.removeAll(keepingCapacity: keepCapacity)
         self.policy.removeAll(keepingCapacity: keepCapacity)
+    }
+
+    private mutating func insertValue(
+        _ value: Value,
+        forKey key: Key,
+        cost: Cost
+    ) {
+        // Evict excessive elements, if necessary:
+
+        if
+            let totalCostLimit = self.totalCostLimit,
+            (self.totalCost + cost) > totalCostLimit
+        {
+            // Remove one more, to make space for new element:
+
+            self.removeWhile(
+                totalCostAbove: totalCostLimit - cost
+            )
+        }
+
+        let index = self.policy.insert()
+
+        self.indicesByKey[key] = index
+
+        self.elementsByIndex[index] = .init(
+            cost: cost,
+            element: (key: key, value: value)
+        )
+
+        self.totalCost += cost
+
+        assert(self.isValid())
+    }
+
+    private mutating func replaceValue(
+        _ value: Value,
+        forKey key: Key,
+        index: Index,
+        cost: Cost
+    ) -> Value? {
+        let container = ElementContainer(
+            cost: cost,
+            element: (key: key, value: value)
+        )
+
+        self.policy.use(index)
+
+        guard let oldValue = self.elementsByIndex.updateValue(
+            container,
+            forKey: index
+        ) else {
+            return nil
+        }
+
+        return oldValue.element.value
     }
 
     @discardableResult
     private mutating func removeValue(
-        forToken token: Token
-    ) -> Element? {
-        guard let container = self.elementsByToken.removeValue(forKey: token) else {
-            return nil
+        forIndex index: Index
+    ) -> Element {
+        guard let container = self.elementsByIndex.removeValue(
+            forKey: index
+        ) else {
+            fatalError("Expected element, found nil")
         }
 
-        self.policy.remove(token)
+        let key = container.element.key
 
-        self.tokensByKey.removeValue(forKey: container.element.key)
+        guard let _ = self.indicesByKey.removeValue(
+            forKey: key
+        ) else {
+            fatalError("Expected index, found nil")
+        }
 
         self.totalCost -= container.cost
+
+        assert(self.isValid())
 
         return container.element
     }
 
     private mutating func removeWhile(totalCostAbove totalCostLimit: Cost) {
         while (self.count > 0) && (self.totalCost > totalCostLimit) {
-            let _ = self.remove()
+            guard let _ = self.remove() else {
+                break
+            }
         }
+    }
+
+    private func isValid() -> Bool {
+        let indexCount = self.indicesByKey.count
+        let elementCount = self.elementsByIndex.count
+        let policyIndexCount = self.policy.count
+
+        guard indexCount == policyIndexCount else {
+            return false
+        }
+
+        guard elementCount == policyIndexCount else {
+            return false
+        }
+
+        return true
     }
 }
 
-extension Cache: Equatable
+extension CustomCache: Equatable
 where
     Value: Equatable
 {
     public static func == (lhs: Self, rhs: Self) -> Bool {
-        guard lhs.tokensByKey.count == rhs.tokensByKey.count else {
+        guard lhs.indicesByKey.count == rhs.indicesByKey.count else {
             return false
         }
 
-        for (key, lhsToken) in lhs.tokensByKey {
-            guard let rhsToken = rhs.tokensByKey[key] else {
+        for (key, lhsIndex) in lhs.indicesByKey {
+            guard let rhsIndex = rhs.indicesByKey[key] else {
                 return false
             }
 
-            let lhsElement = lhs.elementsByToken[lhsToken]!.element
-            let rhsElement = rhs.elementsByToken[rhsToken]!.element
+            let lhsElement = lhs.elementsByIndex[lhsIndex]!.element
+            let rhsElement = rhs.elementsByIndex[rhsIndex]!.element
 
             guard lhsElement.key == rhsElement.key else {
                 return false
@@ -286,14 +353,14 @@ where
     }
 }
 
-extension Cache: Hashable
+extension CustomCache: Hashable
 where
     Value: Hashable
 {
     public func hash(into hasher: inout Hasher) {
         var commutativeHash = 0
-        for token in self.tokensByKey.values {
-            guard let container = self.elementsByToken[token] else {
+        for index in self.indicesByKey.values {
+            guard let container = self.elementsByIndex[index] else {
                 continue
             }
 
@@ -309,7 +376,7 @@ where
     }
 }
 
-extension Cache: CustomStringConvertible {
+extension CustomCache: CustomStringConvertible {
     public var description: String {
         let typeName = String(describing: type(of: self))
         let totalCostLimit = self.totalCostLimit.map { "\($0)" } ?? "nil"
@@ -320,11 +387,11 @@ extension Cache: CustomStringConvertible {
     }
 }
 
-extension Cache: Sequence {
+extension CustomCache: Sequence {
     public typealias Iterator = AnyIterator<Element>
 
     public func makeIterator() -> Iterator {
-        let elements = self.elementsByToken.values.lazy.map { container in
+        let elements = self.elementsByIndex.values.lazy.map { container in
             container.element
         }
         return .init(elements.makeIterator())

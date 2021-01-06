@@ -2,41 +2,16 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-public typealias LRUCache<Key, Value> = Cache<Key, Value, Int, LRUPolicy>
+public typealias LRUCache<Key, Value> = CustomCache<Key, Value, Int, LRUPolicy>
 where
     Key: Hashable
 
-public struct LRUToken {
-    internal let index: LRUPolicy.Index
-
-    internal init(index: LRUPolicy.Index) {
-        self.index = index
-    }
-}
-
-extension LRUToken: Equatable {
-    public static func == (
-        lhs: LRUToken,
-        rhs: LRUToken
-    ) -> Bool {
-        lhs.index == rhs.index
-    }
-}
-
-extension LRUToken: Hashable {
-    public func hash(into hasher: inout Hasher) {
-        self.index.hash(into: &hasher)
-    }
-}
-
 public struct LRUPolicy: CachePolicy {
-    public typealias Token = LRUToken
-
-    internal typealias Index = Int
+    public typealias Index = LRUIndex
 
     internal enum Node: Equatable {
         internal struct Free: Equatable {
-            var nextFree: Int?
+            var nextFree: Index?
         }
 
         internal struct Occupied: Equatable {
@@ -47,6 +22,12 @@ public struct LRUPolicy: CachePolicy {
         case free(Free)
         case occupied(Occupied)
     }
+
+    public var isEmpty: Bool {
+        self.count == 0
+    }
+
+    public private(set) var count: Int
 
     public var capacity: Int {
         self.nodes.capacity
@@ -92,10 +73,16 @@ public struct LRUPolicy: CachePolicy {
             tail: nil,
             nodes: (0..<capacity).map { index in
                 let nextIndex = index + 1
-                let nextFree = (nextIndex < capacity) ? nextIndex : nil
+                let nextFree: Index?
+                if nextIndex < capacity {
+                    nextFree = .init(nextIndex)
+                } else {
+                    nextFree = nil
+                }
                 return .free(.init(nextFree: nextFree))
             },
-            free: (capacity > 0) ? 0 : nil
+            firstFree: (capacity > 0) ? .init(0) : nil,
+            count: 0
         )
     }
 
@@ -103,26 +90,32 @@ public struct LRUPolicy: CachePolicy {
         head: Index?,
         tail: Index?,
         nodes: [Node],
-        free: Index?
+        firstFree: Index?,
+        count: Int
     ) {
         self.head = head
         self.tail = tail
         self.nodes = nodes
-        self.firstFree = free
+        self.firstFree = firstFree
+        self.count = count
     }
 
-    public mutating func insert() -> Token {
+    public mutating func insert() -> Index {
         if self.firstFree == nil {
-            self.firstFree = self.nodes.count
+            self.firstFree = .init(self.nodes.count)
             self.nodes.append(.free(.init(nextFree: nil)))
         }
+
+        #if DEBUG
+        let countBefore = self.count
+        #endif
 
         let index = self.firstFree!
         let currentHead = self.head
 
         let free: Index? = self.modifyNode(at: index) { node in
             guard case .free(let free) = node else {
-                fatalError("Expected free slot, found occupied.")
+                fatalError("Expected free lot, found occupied.")
             }
 
             node = .occupied(.init(
@@ -140,31 +133,42 @@ public struct LRUPolicy: CachePolicy {
         } else {
             self.tail = index
         }
+
         self.head = index
         self.firstFree = free
+        self.count += 1
 
-        return .init(index: index)
+        #if DEBUG
+        assert(self.count - 1 == countBefore)
+        #endif
+
+        return index
     }
 
-    public mutating func use(_ token: Token) -> Token {
-        guard self.head != token.index else {
-            return token
+    public mutating func use(_ index: Index) {
+        guard self.head != index else {
+            return
         }
 
-        self.remove(token)
+        self.remove(index)
 
-        return self.insert()
+        let insertedIndex = self.insert()
+
+        assert(insertedIndex == index)
     }
 
-    public mutating func next() -> Token? {
+    public mutating func remove() -> Index? {
         guard let index = self.tail else {
             return nil
         }
-        return .init(index: index)
+        self.remove(index)
+        return index
     }
 
-    public mutating func remove(_ token: Token) {
-        let index = token.index
+    public mutating func remove(_ index: Index) {
+        #if DEBUG
+        let countBefore = self.count
+        #endif
 
         let nodeOrNil: Node.Occupied? = self.modifyNode(at: index) { node in
             switch node {
@@ -201,8 +205,13 @@ public struct LRUPolicy: CachePolicy {
             }
         }
 
-        self.nodes[index] = .free(.init(nextFree: self.firstFree))
+        self.nodes[index.value] = .free(.init(nextFree: self.firstFree))
         self.firstFree = index
+        self.count -= 1
+
+        #if DEBUG
+        assert(self.count + 1 == countBefore)
+        #endif
     }
 
     @inlinable
@@ -219,6 +228,7 @@ public struct LRUPolicy: CachePolicy {
 
         self.nodes.removeAll(keepingCapacity: keepCapacity)
         self.firstFree = nil
+        self.count = 0
     }
 
     private mutating func modifyOccupiedNode<T>(
@@ -227,7 +237,7 @@ public struct LRUPolicy: CachePolicy {
     ) -> T {
         self.modifyNode(at: index) { node in
             guard case .occupied(var occupied) = node else {
-                fatalError("Expected occupied slot, found free.")
+                fatalError("Expected occupied lot, found free.")
             }
 
             defer {
@@ -242,7 +252,7 @@ public struct LRUPolicy: CachePolicy {
         at index: Index,
         _ closure: (inout Node) -> T
     ) -> T {
-        self.nodes.modifyElement(at: index) { node in
+        self.nodes.modifyElement(at: index.value) { node in
             return closure(&node)
         }
     }
