@@ -23,7 +23,9 @@ where
 {
     public typealias Index = LruIndex<RawIndex>
     public typealias Payload = LruPayload
-    internal typealias Node = LruNode<RawIndex>
+
+    internal typealias Deque = BufferedDeque<Payload, RawIndex>
+    internal typealias Node = Deque.Node
 
     // Since there is only a single possible instance
     // of `Payload` (aka `NoPayload`) we
@@ -37,16 +39,15 @@ where
         self.count == 0
     }
 
-    public private(set) var count: Int
-
-    public var capacity: Int {
-        self.nodes.capacity
+    public var count: Int {
+        self.deque.count
     }
 
-    internal private(set) var head: RawIndex?
-    internal private(set) var tail: RawIndex?
-    internal private(set) var nodes: [Node]
-    internal private(set) var firstFree: RawIndex?
+    public var capacity: Int {
+        self.deque.capacity
+    }
+
+    internal private(set) var deque: Deque
 
     /// Creates an empty cache policy with no preallocated space.
     public init() {
@@ -66,48 +67,7 @@ where
     ///   - minimumCapacity:
     ///     The requested number of elements to store.
     public init(minimumCapacity: Int = 0) {
-        assert(minimumCapacity >= 0)
-
-        // Next smallest greater than or equal power of 2:
-        let capacity: Int
-
-        if minimumCapacity > 0 {
-            let leadingZeros = minimumCapacity.leadingZeroBitCount
-            capacity = 0b1 << (Int.bitWidth - leadingZeros)
-        } else {
-            capacity = 0
-        }
-
-        self.init(
-            head: nil,
-            tail: nil,
-            nodes: (0..<capacity).map { index in
-                let nextIndex = index + 1
-                let nextFree: RawIndex?
-                if nextIndex < capacity {
-                    nextFree = .init(nextIndex)
-                } else {
-                    nextFree = nil
-                }
-                return .free(.init(nextFree: nextFree))
-            },
-            firstFree: (capacity > 0) ? .init(0) : nil,
-            count: 0
-        )
-    }
-
-    internal init(
-        head: RawIndex?,
-        tail: RawIndex?,
-        nodes: [Node],
-        firstFree: RawIndex?,
-        count: Int
-    ) {
-        self.head = head
-        self.tail = tail
-        self.nodes = nodes
-        self.firstFree = firstFree
-        self.count = count
+        self.deque = .init(minimumCapacity: minimumCapacity)
     }
 
     public mutating func evictIfNeeded(
@@ -130,40 +90,7 @@ where
         }
         #endif
 
-        if self.firstFree == nil {
-            self.firstFree = .init(self.nodes.count)
-            self.nodes.append(.free(.init(nextFree: nil)))
-        }
-
-        let index = self.firstFree!
-        let currentHead = self.head
-
-        let free: RawIndex? = self.modifyNode(at: index) { node in
-            guard case .free(let free) = node else {
-                fatalError("Expected free lot, found occupied.")
-            }
-
-            node = .occupied(.init(
-                previous: nil,
-                next: currentHead
-            ))
-
-            return free.nextFree
-        }
-
-        if let head = currentHead {
-            self.modifyOccupiedNode(at: head) { occupied in
-                occupied.previous = index
-            }
-        } else {
-            self.tail = index
-        }
-
-        self.head = index
-        self.firstFree = free
-        self.count += 1
-
-        return .init(index)
+        return self.deque.pushFront(element: payload)
     }
 
     public mutating func use(_ index: Index) {
@@ -179,15 +106,7 @@ where
         }
         #endif
 
-        guard self.head != index.value else {
-            return
-        }
-
-        let payload = self.remove(index)
-
-        let insertedIndex = self.insert(payload: payload)
-
-        assert(insertedIndex == index)
+        return self.deque.moveToFront(index)
     }
 
     public mutating func remove() -> (index: Index, payload: Payload)? {
@@ -203,12 +122,9 @@ where
         }
         #endif
 
-        guard let rawIndex = self.tail else {
+        guard let (index, payload) = self.deque.popBack() else {
             return nil
         }
-
-        let index = Index(rawIndex)
-        let payload = self.remove(index)
 
         return (index, payload)
     }
@@ -226,50 +142,7 @@ where
         }
         #endif
 
-        let rawIndex = index.value
-
-        let nodeOrNil: Node.Occupied? = self.modifyNode(at: rawIndex) { node in
-            switch node {
-            case .free(_):
-                return nil
-            case .occupied(let occupied):
-                node = .occupied(.init())
-                return occupied
-            }
-        }
-
-        let payload = Self.globalPayload
-
-        guard let node = nodeOrNil else {
-            return payload
-        }
-
-        if self.head == index.value {
-            self.head = node.next
-        }
-
-        if self.tail == index.value {
-            self.tail = node.previous
-        }
-
-        if let previousIndex = node.previous {
-            self.modifyOccupiedNode(at: previousIndex) { occupied in
-                assert(occupied.next == rawIndex)
-                occupied.next = node.next
-            }
-        }
-        if let nextIndex = node.next {
-            self.modifyOccupiedNode(at: nextIndex) { occupied in
-                assert(occupied.previous == rawIndex)
-                occupied.previous = node.previous
-            }
-        }
-
-        self.nodes[Int(rawIndex)] = .free(.init(nextFree: self.firstFree))
-        self.firstFree = rawIndex
-        self.count -= 1
-
-        return payload
+        return self.deque.remove(at: index)
     }
 
     @inlinable
@@ -293,38 +166,7 @@ where
         }
         #endif
 
-        self.head = nil
-        self.tail = nil
-
-        self.nodes.removeAll(keepingCapacity: keepCapacity)
-        self.firstFree = nil
-        self.count = 0
-    }
-
-    private mutating func modifyOccupiedNode<T>(
-        at index: RawIndex,
-        _ closure: (inout Node.Occupied) -> T
-    ) -> T {
-        self.modifyNode(at: index) { node in
-            guard case .occupied(var occupied) = node else {
-                fatalError("Expected occupied lot, found free.")
-            }
-
-            defer {
-                node = .occupied(occupied)
-            }
-
-            return closure(&occupied)
-        }
-    }
-
-    private mutating func modifyNode<T>(
-        at index: RawIndex,
-        _ closure: (inout Node) -> T
-    ) -> T {
-        self.nodes.modifyElement(at: Int(index)) { node in
-            return closure(&node)
-        }
+        return self.deque.removeAll(keepingCapacity: keepCapacity)
     }
 
     private func logState(to logger: Logger = logger) {
@@ -332,9 +174,9 @@ where
             return
         }
 
-        let count = self.count
-        let head = self.head.map { String(describing: $0) } ?? "nil"
-        let tail = self.tail.map { String(describing: $0) } ?? "nil"
+        let count = self.deque.count
+        let head = self.deque.head.map { String(describing: $0) } ?? "nil"
+        let tail = self.deque.tail.map { String(describing: $0) } ?? "nil"
 
         logger.trace("count: \(count)")
         logger.trace("head: \(head)")
@@ -350,7 +192,7 @@ where
         var visitedFree: Set<Index> = []
         var visitedOccupied: Set<Index> = []
 
-        var currentIndex: RawIndex? = self.head
+        var currentIndex: RawIndex? = self.deque.head
         var previousIndex: RawIndex? = nil
 
         // Walk linked list:
@@ -358,19 +200,19 @@ where
         while let rawIndex = currentIndex {
             let index = Int(rawIndex)
 
-            let node = self.nodes[index]
+            let node = self.deque.nodes[index]
             guard case .occupied(let occupied) = node else {
                 return false
             }
 
             visitedOccupied.insert(.init(rawIndex))
 
-            if currentIndex == self.head {
+            if currentIndex == self.deque.head {
                 // No node before head:
                 guard occupied.previous == nil else {
                     return false
                 }
-            } else if currentIndex == self.tail {
+            } else if currentIndex == self.deque.tail {
                 // No node after tail:
                 guard occupied.next == nil else {
                     return false
@@ -388,12 +230,12 @@ where
 
         // Walk free list:
 
-        currentIndex = self.firstFree
+        currentIndex = self.deque.firstFree
 
         while let rawIndex = currentIndex {
             let index = Int(rawIndex)
 
-            let node = self.nodes[index]
+            let node = self.deque.nodes[index]
             guard case .free(let free) = node else {
                 return false
             }
@@ -410,7 +252,7 @@ where
 
         let visited = visitedFree.union(visitedOccupied)
 
-        guard visited.count == self.nodes.count else {
+        guard visited.count == self.deque.nodes.count else {
             return false
         }
 

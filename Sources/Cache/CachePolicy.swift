@@ -6,7 +6,7 @@ public protocol CachePayload {
     static var `default`: Self { get }
 }
 
-public struct NoPayload: CachePayload {
+public struct NoPayload: CachePayload, Equatable {
     public static let `default`: Self = .init()
 }
 

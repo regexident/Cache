@@ -21,10 +21,10 @@ final class LruPolicyTests: XCTestCase {
     func testInit() throws {
         let policy = self.policy()
 
-        XCTAssertNil(policy.head)
-        XCTAssertNil(policy.tail)
-        XCTAssertEqual(policy.nodes, [])
-        XCTAssertNil(policy.firstFree)
+        XCTAssertNil(policy.deque.head)
+        XCTAssertNil(policy.deque.tail)
+        XCTAssertEqual(policy.deque.nodes, [])
+        XCTAssertNil(policy.deque.firstFree)
     }
 
     func testInsert() throws {
@@ -32,51 +32,103 @@ final class LruPolicyTests: XCTestCase {
 
         let head = policy.insert()
 
-        XCTAssertEqual(policy.head, head.value)
-        XCTAssertEqual(policy.tail, head.value)
-        XCTAssertEqual(policy.nodes, [
-            .occupied(.init(previous: nil, next: nil)),
+        XCTAssertEqual(policy.deque.head, head.value)
+        XCTAssertEqual(policy.deque.tail, head.value)
+        XCTAssertEqual(policy.deque.nodes, [
+            .occupied(.init(
+                element: .default,
+                previous: nil,
+                next: nil
+            )),
         ])
-        XCTAssertNil(policy.firstFree)
+        XCTAssertNil(policy.deque.firstFree)
 
         let newHead = policy.insert()
 
-        XCTAssertEqual(policy.head, newHead.value)
-        XCTAssertEqual(policy.tail, head.value)
-        XCTAssertEqual(policy.nodes, [
-            .occupied(.init(previous: 1, next: nil)),
-            .occupied(.init(previous: nil, next: 0)),
+        XCTAssertEqual(policy.deque.head, newHead.value)
+        XCTAssertEqual(policy.deque.tail, head.value)
+        XCTAssertEqual(policy.deque.nodes, [
+            .occupied(.init(
+                element: .default,
+                previous: 1,
+                next: nil
+            )),
+            .occupied(.init(
+                element: .default,
+                previous: nil,
+                next: 0
+            )),
         ])
-        XCTAssertNil(policy.firstFree)
+        XCTAssertNil(policy.deque.firstFree)
     }
 
     func testUse() throws {
         var policy = self.policy(count: 5)
 
-        XCTAssertEqual(policy.head, 4)
-        XCTAssertEqual(policy.tail, 0)
-        XCTAssertEqual(policy.nodes, [
-            .occupied(.init(previous: 1, next: nil)),
-            .occupied(.init(previous: 2, next: 0)),
-            .occupied(.init(previous: 3, next: 1)),
-            .occupied(.init(previous: 4, next: 2)),
-            .occupied(.init(previous: nil, next: 3)),
+        XCTAssertEqual(policy.deque.head, 4)
+        XCTAssertEqual(policy.deque.tail, 0)
+        XCTAssertEqual(policy.deque.nodes, [
+            .occupied(.init(
+                element: .default,
+                previous: 1,
+                next: nil
+            )),
+            .occupied(.init(
+                element: .default,
+                previous: 2,
+                next: 0
+            )),
+            .occupied(.init(
+                element: .default,
+                previous: 3,
+                next: 1
+            )),
+            .occupied(.init(
+                element: .default,
+                previous: 4,
+                next: 2
+            )),
+            .occupied(.init(
+                element: .default,
+                previous: nil,
+                next: 3
+            )),
         ])
-        XCTAssertEqual(policy.firstFree, nil)
+        XCTAssertEqual(policy.deque.firstFree, nil)
 
         let index: Index = 2
         policy.use(index)
 
-        XCTAssertEqual(policy.head, 2)
-        XCTAssertEqual(policy.tail, 0)
-        XCTAssertEqual(policy.nodes, [
-            .occupied(.init(previous: 1, next: nil)),
-            .occupied(.init(previous: 3, next: 0)),
-            .occupied(.init(previous: nil, next: 4)),
-            .occupied(.init(previous: 4, next: 1)),
-            .occupied(.init(previous: 2, next: 3)),
+        XCTAssertEqual(policy.deque.head, 2)
+        XCTAssertEqual(policy.deque.tail, 0)
+        XCTAssertEqual(policy.deque.nodes, [
+            .occupied(.init(
+                element: .default,
+                previous: 1,
+                next: nil
+            )),
+            .occupied(.init(
+                element: .default,
+                previous: 3,
+                next: 0
+            )),
+            .occupied(.init(
+                element: .default,
+                previous: nil,
+                next: 4
+            )),
+            .occupied(.init(
+                element: .default,
+                previous: 4,
+                next: 1
+            )),
+            .occupied(.init(
+                element: .default,
+                previous: 2,
+                next: 3
+            )),
         ])
-        XCTAssertEqual(policy.firstFree, nil)
+        XCTAssertEqual(policy.deque.firstFree, nil)
     }
 
     func testRemove() throws {
@@ -90,104 +142,184 @@ final class LruPolicyTests: XCTestCase {
     func testRemoveIndex() throws {
         var policy = self.policy(count: 5)
 
-        XCTAssertEqual(policy.head, 4)
-        XCTAssertEqual(policy.tail, 0)
-        XCTAssertEqual(policy.nodes, [
-            .occupied(.init(previous: 1, next: nil)),
-            .occupied(.init(previous: 2, next: 0)),
-            .occupied(.init(previous: 3, next: 1)),
-            .occupied(.init(previous: 4, next: 2)),
-            .occupied(.init(previous: nil, next: 3)),
+        XCTAssertEqual(policy.deque.head, 4)
+        XCTAssertEqual(policy.deque.tail, 0)
+        XCTAssertEqual(policy.deque.nodes, [
+            .occupied(.init(
+                element: .default,
+                previous: 1,
+                next: nil
+            )),
+            .occupied(.init(
+                element: .default,
+                previous: 2,
+                next: 0
+            )),
+            .occupied(.init(
+                element: .default,
+                previous: 3,
+                next: 1
+            )),
+            .occupied(.init(
+                element: .default,
+                previous: 4,
+                next: 2
+            )),
+            .occupied(.init(
+                element: .default,
+                previous: nil,
+                next: 3
+            )),
         ])
-        XCTAssertEqual(policy.firstFree, nil)
+        XCTAssertEqual(policy.deque.firstFree, nil)
 
         // depolicy head:
         policy.remove(4)
 
-        XCTAssertEqual(policy.head, 3)
-        XCTAssertEqual(policy.tail, 0)
-        XCTAssertEqual(policy.nodes, [
-            .occupied(.init(previous: 1, next: nil)),
-            .occupied(.init(previous: 2, next: 0)),
-            .occupied(.init(previous: 3, next: 1)),
-            .occupied(.init(previous: nil, next: 2)),
+        XCTAssertEqual(policy.deque.head, 3)
+        XCTAssertEqual(policy.deque.tail, 0)
+        XCTAssertEqual(policy.deque.nodes, [
+            .occupied(.init(
+                element: .default,
+                previous: 1,
+                next: nil
+            )),
+            .occupied(.init(
+                element: .default,
+                previous: 2,
+                next: 0
+            )),
+            .occupied(.init(
+                element: .default,
+                previous: 3,
+                next: 1
+            )),
+            .occupied(.init(
+                element: .default,
+                previous: nil,
+                next: 2
+            )),
             .free(.init(nextFree: nil)),
         ])
-        XCTAssertEqual(policy.firstFree, 4)
+        XCTAssertEqual(policy.deque.firstFree, 4)
 
         // depolicy middle:
         policy.remove(2)
 
-        XCTAssertEqual(policy.head, 3)
-        XCTAssertEqual(policy.tail, 0)
-        XCTAssertEqual(policy.nodes, [
-            .occupied(.init(previous: 1, next: nil)),
-            .occupied(.init(previous: 3, next: 0)),
+        XCTAssertEqual(policy.deque.head, 3)
+        XCTAssertEqual(policy.deque.tail, 0)
+        XCTAssertEqual(policy.deque.nodes, [
+            .occupied(.init(
+                element: .default,
+                previous: 1,
+                next: nil
+            )),
+            .occupied(.init(
+                element: .default,
+                previous: 3,
+                next: 0
+            )),
             .free(.init(nextFree: 4)),
-            .occupied(.init(previous: nil, next: 1)),
+            .occupied(.init(
+                element: .default,
+                previous: nil,
+                next: 1
+            )),
             .free(.init(nextFree: nil)),
         ])
-        XCTAssertEqual(policy.firstFree, 2)
+        XCTAssertEqual(policy.deque.firstFree, 2)
 
         // depolicy tail:
         policy.remove(0)
 
-        XCTAssertEqual(policy.head, 3)
-        XCTAssertEqual(policy.tail, 1)
-        XCTAssertEqual(policy.nodes, [
+        XCTAssertEqual(policy.deque.head, 3)
+        XCTAssertEqual(policy.deque.tail, 1)
+        XCTAssertEqual(policy.deque.nodes, [
             .free(.init(nextFree: 2)),
-            .occupied(.init(previous: 3, next: nil)),
+            .occupied(.init(
+                element: .default,
+                previous: 3,
+                next: nil
+            )),
             .free(.init(nextFree: 4)),
-            .occupied(.init(previous: nil, next: 1)),
+            .occupied(.init(
+                element: .default,
+                previous: nil,
+                next: 1
+            )),
             .free(.init(nextFree: nil)),
         ])
-        XCTAssertEqual(policy.firstFree, 0)
+        XCTAssertEqual(policy.deque.firstFree, 0)
     }
 
     func testRemoveAll() throws {
         var policy = self.policy(count: 3)
 
-        XCTAssertEqual(policy.head, 2)
-        XCTAssertEqual(policy.tail, 0)
-        XCTAssertEqual(policy.nodes, [
-            .occupied(.init(previous: 1, next: nil)),
-            .occupied(.init(previous: 2, next: 0)),
-            .occupied(.init(previous: nil, next: 1)),
+        XCTAssertEqual(policy.deque.head, 2)
+        XCTAssertEqual(policy.deque.tail, 0)
+        XCTAssertEqual(policy.deque.nodes, [
+            .occupied(.init(
+                element: .default,
+                previous: 1,
+                next: nil
+            )),
+            .occupied(.init(
+                element: .default,
+                previous: 2,
+                next: 0
+            )),
+            .occupied(.init(
+                element: .default,
+                previous: nil,
+                next: 1
+            )),
         ])
-        XCTAssertEqual(policy.firstFree, nil)
+        XCTAssertEqual(policy.deque.firstFree, nil)
 
         policy.removeAll()
 
-        XCTAssertEqual(policy.head, nil)
-        XCTAssertEqual(policy.tail, nil)
-        XCTAssertEqual(policy.nodes, [])
-        XCTAssertEqual(policy.firstFree, nil)
+        XCTAssertEqual(policy.deque.head, nil)
+        XCTAssertEqual(policy.deque.tail, nil)
+        XCTAssertEqual(policy.deque.nodes, [])
+        XCTAssertEqual(policy.deque.firstFree, nil)
 
-        XCTAssertEqual(policy.nodes.capacity, 0)
+        XCTAssertEqual(policy.deque.nodes.capacity, 0)
     }
 
     func testRemoveAllKeepingCapacity() throws {
         var policy = self.policy(count: 3)
 
-        XCTAssertEqual(policy.head, 2)
-        XCTAssertEqual(policy.tail, 0)
-        XCTAssertEqual(policy.nodes, [
-            .occupied(.init(previous: 1, next: nil)),
-            .occupied(.init(previous: 2, next: 0)),
-            .occupied(.init(previous: nil, next: 1)),
+        XCTAssertEqual(policy.deque.head, 2)
+        XCTAssertEqual(policy.deque.tail, 0)
+        XCTAssertEqual(policy.deque.nodes, [
+            .occupied(.init(
+                element: .default,
+                previous: 1,
+                next: nil
+            )),
+            .occupied(.init(
+                element: .default,
+                previous: 2,
+                next: 0
+            )),
+            .occupied(.init(
+                element: .default,
+                previous: nil,
+                next: 1
+            )),
         ])
-        XCTAssertEqual(policy.firstFree, nil)
+        XCTAssertEqual(policy.deque.firstFree, nil)
 
-        let capacity = policy.nodes.capacity
+        let capacity = policy.deque.nodes.capacity
 
         policy.removeAll(keepingCapacity: true)
 
-        XCTAssertEqual(policy.head, nil)
-        XCTAssertEqual(policy.tail, nil)
-        XCTAssertEqual(policy.nodes, [])
-        XCTAssertEqual(policy.firstFree, nil)
+        XCTAssertEqual(policy.deque.head, nil)
+        XCTAssertEqual(policy.deque.tail, nil)
+        XCTAssertEqual(policy.deque.nodes, [])
+        XCTAssertEqual(policy.deque.firstFree, nil)
 
-        XCTAssertEqual(policy.nodes.capacity, capacity)
+        XCTAssertEqual(policy.deque.nodes.capacity, capacity)
     }
 
     static var allTests = [
