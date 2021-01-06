@@ -28,6 +28,36 @@ where
     }
 
     internal fileprivate(set) var storage: Storage
+    internal let defaultPayload: Payload
+
+    /// Creates an empty cache with preallocated space
+    /// for at least the specified number of values
+    /// and a `defaultPayload` of `Payload.default`.
+    ///
+    /// - Note:
+    ///   For performance reasons, the size of the newly allocated
+    ///   storage might be greater than the requested capacity.
+    ///   Use the policy's `capacity` property to determine the size
+    ///   of the new storage.
+    ///
+    /// - Parameters:
+    ///   - minimumCapacity:
+    ///     The minimum number of elements to provide initial capacity for.
+    ///   - policy:
+    ///     The cache's desired policy for a given `minimumCapacity`.
+    public init(
+        minimumCapacity: Int = 0,
+        policy policyProvider: (Int) -> Policy
+    )
+    where
+        Payload: DefaultCachePayload
+    {
+        self.init(
+            minimumCapacity: minimumCapacity,
+            defaultPayload: .default,
+            policy: policyProvider
+        )
+    }
 
     /// Creates an empty cache with preallocated space
     /// for at least the specified number of values.
@@ -40,11 +70,14 @@ where
     ///
     /// - Parameters:
     ///   - minimumCapacity:
-    ///     The requested number of elements to store.
+    ///     The minimum number of elements to provide initial capacity for.
+    ///   - defaultPayload:
+    ///     The default payload to use when not explicitly provided.
     ///   - policy:
     ///     The cache's desired policy for a given `minimumCapacity`.
     public init(
         minimumCapacity: Int = 0,
+        defaultPayload: Payload,
         policy policyProvider: (Int) -> Policy
     ) {
         self.storage = .init(
@@ -52,15 +85,18 @@ where
             elementsByIndex: .init(minimumCapacity: minimumCapacity),
             policy: policyProvider(minimumCapacity)
         )
+        self.defaultPayload = defaultPayload
     }
 
     public mutating func cachedValue(
         forKey key: Key,
-        payload: Payload = .default,
+        payload: Payload? = nil,
         didMiss: UnsafeMutablePointer<Bool>? = nil,
         by closure: () throws -> Value
     ) rethrows -> Value {
-        try self.modifyStorage { storage in
+        let payload = payload ?? self.defaultPayload
+
+        return try self.modifyStorage { storage in
             try storage.cachedValue(
                 forKey: key,
                 payload: payload,
@@ -87,9 +123,11 @@ where
     public mutating func setValue(
         _ value: Value?,
         forKey key: Key,
-        payload: Payload = .default
+        payload: Payload? = nil
     ) {
-        self.modifyStorage { storage in
+        let payload = payload ?? self.defaultPayload
+
+        return self.modifyStorage { storage in
             storage.setValue(
                 value,
                 forKey: key,
@@ -102,9 +140,11 @@ where
     public mutating func updateValue(
         _ value: Value,
         forKey key: Key,
-        payload: Payload = .default
+        payload: Payload? = nil
     ) -> Value? {
-        self.modifyStorage { storage in
+        let payload = payload ?? self.defaultPayload
+
+        return self.modifyStorage { storage in
             storage.updateValue(
                 value,
                 forKey: key,
@@ -132,9 +172,7 @@ where
     }
 
     public mutating func removeAll() {
-        self.modifyStorage { storage in
-            storage.removeAll()
-        }
+        self.removeAll(keepingCapacity: false)
     }
 
     public mutating func removeAll(

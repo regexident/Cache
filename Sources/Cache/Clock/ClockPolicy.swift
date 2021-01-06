@@ -35,7 +35,7 @@ where
     // access it via `Self.globalPayload` to make
     // things more explicit.
     private static var globalPayload: Payload {
-        .default
+        .init()
     }
 
     public var capacity: Int {

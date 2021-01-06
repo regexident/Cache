@@ -18,7 +18,7 @@ final class FifoCacheTests: XCTestCase {
         minimumCapacity: Int = 0,
         maximumCapacity: Int
     ) -> CustomCache<Key, Value, Policy> {
-        .init { minimumCapacity in
+        .init(defaultPayload: .init()) { minimumCapacity in
             self.policy(
                 minimumCapacity: minimumCapacity,
                 maximumCapacity: maximumCapacity

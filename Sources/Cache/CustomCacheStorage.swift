@@ -52,7 +52,7 @@ where
 
     internal func cachedValue(
         forKey key: Key,
-        payload: Payload = .default,
+        payload: Payload,
         didMiss: UnsafeMutablePointer<Bool>? = nil,
         by closure: () throws -> Value
     ) rethrows -> Value {
@@ -101,7 +101,7 @@ where
     internal func setValue(
         _ value: Value?,
         forKey key: Key,
-        payload: Payload = .default
+        payload: Payload
     ) {
         guard let value = value else {
             self.removeValue(forKey: key)
@@ -115,7 +115,7 @@ where
     internal func updateValue(
         _ value: Value,
         forKey key: Key,
-        payload: Payload = .default
+        payload: Payload
     ) -> Value? {
         if let index = self.indicesByKey[key] {
             return self.replaceValue(
@@ -194,7 +194,7 @@ where
     private func insertValue(
         _ value: Value,
         forKey key: Key,
-        payload: Payload = .default
+        payload: Payload
     ) {
         self.policy.evictIfNeeded(
             for: .alloc(payload: payload)

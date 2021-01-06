@@ -2,11 +2,11 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-public protocol CachePayload {
+public protocol DefaultCachePayload {
     static var `default`: Self { get }
 }
 
-public struct NoPayload: CachePayload, Equatable {
+public struct NoPayload: DefaultCachePayload, Equatable {
     public static let `default`: Self = .init()
 }
 
@@ -20,7 +20,7 @@ public protocol CachePolicy {
     associatedtype Index: Hashable
 
     /// The policy's payload type.
-    associatedtype Payload: CachePayload
+    associatedtype Payload
 
     var isEmpty: Bool { get }
     var count: Int { get }

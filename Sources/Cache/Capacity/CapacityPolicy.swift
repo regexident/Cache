@@ -88,7 +88,7 @@ where
     }
 
     public mutating func removeAll() {
-        self.base.removeAll()
+        self.removeAll(keepingCapacity: false)
     }
 
     public mutating func removeAll(keepingCapacity keepCapacity: Bool) {
