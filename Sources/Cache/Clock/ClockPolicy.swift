@@ -4,17 +4,17 @@
 
 import Logging
 
-public typealias ClockCache<Key, Value> = CustomClockCache<Key, Value, Int, UInt64>
+public typealias ClockCache<Key, Value> = CustomClockCache<Key, Value, UInt64>
 where
     Key: Hashable
 
-public typealias CustomClockCache<Key, Value, Cost, Bits> = CustomCache<Key, Value, Cost, CustomClockPolicy<Bits>>
+public typealias CustomClockCache<Key, Value, Bits> = CustomCache<Key, Value, CustomClockPolicy<Bits>>
 where
     Key: Hashable,
-    Cost: Comparable & Numeric,
     Bits: FixedWidthInteger & UnsignedInteger
 
 public typealias ClockIndex = ChunkedBitIndex
+public typealias ClockPayload = NoPayload
 
 public typealias ClockPolicy = CustomClockPolicy<UInt64>
 
@@ -23,6 +23,7 @@ where
     Bits: FixedWidthInteger & UnsignedInteger
 {
     public typealias Index = ClockIndex
+    public typealias Payload = ClockPayload
 
     internal typealias Chunk = BitChunk<Bits>
     internal typealias Block = ClockBlock<Bits>
@@ -32,6 +33,14 @@ where
 
         internal var insert: Index = .init()
         internal var remove: Index = .init()
+    }
+
+    // Since there is only a single possible instance
+    // of `Payload` (aka `NoPayload`) we
+    // access it via `Self.globalPayload` to make
+    // things more explicit.
+    private static var globalPayload: Payload {
+        .default
     }
 
     public var capacity: Int {
@@ -68,7 +77,7 @@ where
     /// - Parameters:
     ///   - minimumCapacity:
     ///     The requested number of elements to store.
-    public init(minimumCapacity: Int) {
+    public init(minimumCapacity: Int = 0) {
         assert(minimumCapacity >= 0)
 
         // Next smallest greater than or equal power of 2:
@@ -106,7 +115,14 @@ where
         self.cursors = cursors
     }
 
-    public mutating func insert() -> Index {
+    public mutating func evictIfNeeded(
+        for trigger: CacheEvictionTrigger<Payload>,
+        callback: (Index) -> Void
+    ) {
+        // FIXME!
+    }
+
+    public mutating func insert(payload: Payload) -> Index {
         #if DEBUG
         logger.trace("\(type(of: self)).\(#function)")
         self.logState(to: logger)
@@ -191,7 +207,7 @@ where
         self.blocks[chunkIndex].reference(mask: indexMask)
     }
 
-    public mutating func remove() -> Index? {
+    public mutating func remove() -> (index: Index, payload: Payload)? {
         #if DEBUG
         logger.trace("\(type(of: self)).\(#function)")
         self.logState(to: logger)
@@ -241,6 +257,8 @@ where
         assert(didFindVictim)
 
         let index = Self.index(chunk: chunkIndex, bit: bitIndex)
+        let payload = Self.globalPayload
+
         let indexMask = Chunk.mask(index: bitIndex)
 
         assert(self.blocks[chunkIndex].isOccupied(mask: indexMask))
@@ -250,10 +268,10 @@ where
         self.cursors.remove = index.advanced(by: 1)
         self.count -= 1
 
-        return index
+        return (index, payload)
     }
 
-    public mutating func remove(_ index: Index) {
+    public mutating func remove(_ index: Index) -> Payload {
         #if DEBUG
         logger.trace("\(type(of: self)).\(#function)")
         self.logState(to: logger)
@@ -274,6 +292,8 @@ where
         self.blocks[chunkIndex].evict(mask: indexMask)
 
         self.count -= 1
+
+        return Self.globalPayload
     }
 
     public mutating func removeAll() {
@@ -328,6 +348,7 @@ where
 
     private static func blocksFor(count: Int) -> Int {
         let bitWidth = Chunk.bitWidth
+
         // Calculate required number of blocks, by rounding up:
         return (count + (bitWidth - 1)) / bitWidth
     }

@@ -4,18 +4,18 @@
 
 import Logging
 
-public typealias RrCache<Key, Value> = CustomRrCache<Key, Value, Int, UInt64, SystemRandomNumberGenerator>
+public typealias RrCache<Key, Value> = CustomRrCache<Key, Value, UInt64, SystemRandomNumberGenerator>
 where
     Key: Hashable
 
-public typealias CustomRrCache<Key, Value, Cost, Bits, Generator> = CustomCache<Key, Value, Cost, CustomRrPolicy<Bits, Generator>>
+public typealias CustomRrCache<Key, Value, Bits, Generator> = CustomCache<Key, Value, CustomRrPolicy<Bits, Generator>>
 where
     Key: Hashable,
-    Cost: Comparable & Numeric,
     Bits: FixedWidthInteger & UnsignedInteger,
     Generator: InitializableRandomNumberGenerator
 
 public typealias RrIndex = ChunkedBitIndex
+public typealias RrPayload = NoPayload
 
 public typealias RrPolicy = CustomRrPolicy<UInt64, SystemRandomNumberGenerator>
 
@@ -25,8 +25,17 @@ where
     Generator: InitializableRandomNumberGenerator
 {
     public typealias Index = RrIndex
+    public typealias Payload = RrPayload
 
     internal typealias Chunk = BitChunk<Bits>
+
+    // Since there is only a single possible instance
+    // of `Payload` (aka `NoPayload`) we
+    // access it via `Self.globalPayload` to make
+    // things more explicit.
+    private static var globalPayload: Payload {
+        .default
+    }
 
     public var isEmpty: Bool {
         self.count == 0
@@ -52,7 +61,7 @@ where
     }
 
     public init(
-        minimumCapacity: Int
+        minimumCapacity: Int = 0
     ) {
         self.init(
             minimumCapacity: minimumCapacity,
@@ -61,7 +70,7 @@ where
     }
 
     public init(
-        minimumCapacity: Int,
+        minimumCapacity: Int = 0,
         generator: Generator
     ) {
         assert(minimumCapacity >= 0)
@@ -101,7 +110,14 @@ where
         self.generator = generator
     }
 
-    public mutating func insert() -> Index {
+    public mutating func evictIfNeeded(
+        for trigger: CacheEvictionTrigger<Payload>,
+        callback: (Index) -> Void
+    ) {
+        // FIXME!
+    }
+
+    public mutating func insert(payload: Payload) -> Index {
         #if DEBUG
         logger.trace("\(type(of: self)).\(#function)")
         self.logState(to: logger)
@@ -157,7 +173,7 @@ where
         // ignored
     }
 
-    public mutating func remove() -> Index? {
+    public mutating func remove() -> (index: Index, payload: Payload)? {
         #if DEBUG
         logger.trace("\(type(of: self)).\(#function)")
         self.logState(to: logger)
@@ -197,13 +213,15 @@ where
 
         let mask = Chunk.mask(range: startBitIndex...endBitIndex)
         self.chunks[chunkIndex].setZeros(atMask: mask)
-        let index = Self.index(chunk: chunkIndex, bit: endBitIndex)
         self.count -= 1
 
-        return index
+        let index = Self.index(chunk: chunkIndex, bit: endBitIndex)
+        let payload = Self.globalPayload
+
+        return (index, payload)
     }
 
-    public mutating func remove(_ index: Index) {
+    public mutating func remove(_ index: Index) -> Payload {
         #if DEBUG
         logger.trace("\(type(of: self)).\(#function)")
         self.logState(to: logger)
@@ -220,6 +238,8 @@ where
         let mask = Chunk.mask(index: bitIndex)
         self.chunks[chunkIndex].setZeros(atMask: mask)
         self.count -= 1
+
+        return Self.globalPayload
     }
 
     @inlinable
@@ -249,6 +269,7 @@ where
 
     private static func chunksFor(count: Int) -> Int {
         let bitWidth = Chunk.bitWidth
+        
         // Calculate required number of chunks, by rounding up:
         return (count + (bitWidth - 1)) / bitWidth
     }

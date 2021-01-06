@@ -4,15 +4,16 @@
 
 import Logging
 
-public typealias LruCache<Key, Value> = CustomLruCache<Key, Value, Int, Int>
+public typealias LruCache<Key, Value> = CustomLruCache<Key, Value, Int>
 where
     Key: Hashable
 
-public typealias CustomLruCache<Key, Value, Cost, Index> = CustomCache<Key, Value, Cost, CustomLruPolicy<Index>>
+public typealias CustomLruCache<Key, Value, Index> = CustomCache<Key, Value, CustomLruPolicy<Index>>
 where
     Key: Hashable,
-    Cost: Comparable & Numeric,
     Index: BinaryInteger
+
+public typealias LruPayload = NoPayload
 
 public typealias LruPolicy = CustomLruPolicy<UInt32>;
 
@@ -21,8 +22,17 @@ where
     RawIndex: BinaryInteger
 {
     public typealias Index = LruIndex<RawIndex>
+    public typealias Payload = LruPayload
     internal typealias Node = LruNode<RawIndex>
 
+    // Since there is only a single possible instance
+    // of `Payload` (aka `NoPayload`) we
+    // access it via `Self.globalPayload` to make
+    // things more explicit.
+    private static var globalPayload: Payload {
+        .default
+    }
+    
     public var isEmpty: Bool {
         self.count == 0
     }
@@ -55,7 +65,7 @@ where
     /// - Parameters:
     ///   - minimumCapacity:
     ///     The requested number of elements to store.
-    public init(minimumCapacity: Int) {
+    public init(minimumCapacity: Int = 0) {
         assert(minimumCapacity >= 0)
 
         // Next smallest greater than or equal power of 2:
@@ -100,7 +110,14 @@ where
         self.count = count
     }
 
-    public mutating func insert() -> Index {
+    public mutating func evictIfNeeded(
+        for trigger: CacheEvictionTrigger<Payload>,
+        callback: (Index) -> Void
+    ) {
+        // nothing
+    }
+
+    public mutating func insert(payload: Payload) -> Index {
         #if DEBUG
         logger.trace("\(type(of: self)).\(#function)")
         self.logState(to: logger)
@@ -166,14 +183,14 @@ where
             return
         }
 
-        self.remove(index)
+        let payload = self.remove(index)
 
-        let insertedIndex = self.insert()
+        let insertedIndex = self.insert(payload: payload)
 
         assert(insertedIndex == index)
     }
 
-    public mutating func remove() -> Index? {
+    public mutating func remove() -> (index: Index, payload: Payload)? {
         #if DEBUG
         logger.trace("\(type(of: self)).\(#function)")
         self.logState(to: logger)
@@ -191,13 +208,12 @@ where
         }
 
         let index = Index(rawIndex)
+        let payload = self.remove(index)
 
-        self.remove(index)
-
-        return index
+        return (index, payload)
     }
 
-    public mutating func remove(_ index: Index) {
+    public mutating func remove(_ index: Index) -> Payload {
         #if DEBUG
         logger.trace("\(type(of: self)).\(#function)")
         self.logState(to: logger)
@@ -222,8 +238,10 @@ where
             }
         }
 
+        let payload = Self.globalPayload
+
         guard let node = nodeOrNil else {
-            return
+            return payload
         }
 
         if self.head == index.value {
@@ -250,6 +268,8 @@ where
         self.nodes[Int(rawIndex)] = .free(.init(nextFree: self.firstFree))
         self.firstFree = rawIndex
         self.count -= 1
+
+        return payload
     }
 
     @inlinable

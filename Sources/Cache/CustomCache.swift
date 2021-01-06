@@ -2,56 +2,32 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-public typealias CacheCost = Comparable & AdditiveArithmetic & Numeric
-
-public struct CustomCache<Key, Value, Cost, Policy>
+public struct CustomCache<Key, Value, Policy>
 where
     Key: Hashable,
-    Policy: CachePolicy,
-    Cost: CacheCost
+    Policy: CachePolicy
 {
     public typealias Element = (key: Key, value: Value)
+    public typealias Payload = Policy.Payload
 
     internal typealias Index = Policy.Index
-
-    internal struct ElementContainer {
-        var cost: Cost
-        var element: Element
-    }
+    internal typealias Storage = CustomCacheStorage<Key, Value, Policy>
 
     /// Complexity: O(`1`).
     public var isEmpty: Bool {
-        self.indicesByKey.isEmpty
+        self.storage.isEmpty
     }
 
     /// Complexity: O(`1`).
     public var count: Int {
-        self.indicesByKey.count
+        self.storage.count
     }
 
     public var capacity: Int {
-        self.indicesByKey.capacity
+        self.storage.capacity
     }
 
-    public var totalCostLimit: Cost? {
-        didSet {
-            guard let totalCostLimit = self.totalCostLimit else {
-                return
-            }
-
-            self.removeWhile(
-                totalCostAbove: totalCostLimit
-            )
-        }
-    }
-
-    public let defaultCost: Cost
-
-    public private(set) var totalCost: Cost
-    
-    internal fileprivate(set) var indicesByKey: [Key: Index]
-    internal fileprivate(set) var elementsByIndex: [Index: ElementContainer]
-    internal fileprivate(set) var policy: Policy
+    internal fileprivate(set) var storage: Storage
 
     /// Creates an empty cache with preallocated space
     /// for at least the specified number of values.
@@ -65,148 +41,75 @@ where
     /// - Parameters:
     ///   - minimumCapacity:
     ///     The requested number of elements to store.
-    ///   - totalCostLimit:
-    ///     The maximum total cost that the cache can
-    ///     hold before it starts evicting objects.
-    ///   - defaultCost:
-    ///     The default cost associated with all stored value,
-    ///     for which no individual cost was specified.
+    ///   - policy:
+    ///     The cache's desired policy for a given `minimumCapacity`.
     public init(
-        minimumCapacity: Int? = nil,
-        totalCostLimit: Cost? = nil,
-        defaultCost: Cost
-    ) {
-        self.init(
-            minimumCapacity: minimumCapacity,
-            totalCostLimit: totalCostLimit,
-            defaultCost: defaultCost,
-            policy: { minimumCapacity in
-                .init(minimumCapacity: minimumCapacity)
-            }
-        )
-    }
-
-    internal init(
-        minimumCapacity: Int? = nil,
-        totalCostLimit: Cost? = nil,
-        defaultCost: Cost,
+        minimumCapacity: Int = 0,
         policy policyProvider: (Int) -> Policy
     ) {
-        let minimumCapacity = minimumCapacity ?? 0
-
-        self.init(
-            totalCostLimit: totalCostLimit,
-            defaultCost: defaultCost,
-            totalCost: .zero,
+        self.storage = .init(
             indicesByKey: .init(minimumCapacity: minimumCapacity),
             elementsByIndex: .init(minimumCapacity: minimumCapacity),
             policy: policyProvider(minimumCapacity)
         )
     }
 
-    private init(
-        totalCostLimit: Cost?,
-        defaultCost: Cost,
-        totalCost: Cost,
-        indicesByKey: [Key: Index],
-        elementsByIndex: [Index: ElementContainer],
-        policy: Policy
-    ) {
-        if let totalCostLimit = totalCostLimit {
-            assert(totalCostLimit >= 0)
-        }
-
-        self.totalCostLimit = totalCostLimit
-        self.defaultCost = defaultCost
-        self.totalCost = totalCost
-        self.indicesByKey = indicesByKey
-        self.elementsByIndex = elementsByIndex
-        self.policy = policy
-    }
-
     public mutating func cachedValue(
         forKey key: Key,
-        cost: Cost? = nil,
+        payload: Payload = .default,
         didMiss: UnsafeMutablePointer<Bool>? = nil,
         by closure: () throws -> Value
     ) rethrows -> Value {
-        if let index = self.indicesByKey[key] {
-            didMiss?.pointee = false
-            return self.value(forIndex: index)
+        try self.modifyStorage { storage in
+            try storage.cachedValue(
+                forKey: key,
+                payload: payload,
+                didMiss: didMiss,
+                by: closure
+            )
         }
-
-        let value = try closure()
-
-        self.setValue(
-            value,
-            forKey: key,
-            cost: cost
-        )
-
-        didMiss?.pointee = true
-
-        return value
     }
 
     public mutating func value(
         forKey key: Key
     ) -> Value? {
-        guard let index = self.indicesByKey[key] else {
-            return nil
+        self.modifyStorage { storage in
+            storage.value(forKey: key)
         }
-
-        return self.value(forIndex: index)
     }
 
     public func peekValue(
         forKey key: Key
     ) -> Value? {
-        guard let index = self.indicesByKey[key] else {
-            return nil
-        }
-
-        guard let container = self.elementsByIndex[index] else {
-            fatalError("Expected element, found nil")
-        }
-
-        return container.element.value
+        self.storage.peekValue(forKey: key)
     }
 
     public mutating func setValue(
         _ value: Value?,
         forKey key: Key,
-        cost: Cost? = nil
+        payload: Payload = .default
     ) {
-        guard let value = value else {
-            self.removeValue(forKey: key)
-            return
+        self.modifyStorage { storage in
+            storage.setValue(
+                value,
+                forKey: key,
+                payload: payload
+            )
         }
-
-        self.updateValue(value, forKey: key, cost: cost)
     }
 
     @discardableResult
     public mutating func updateValue(
         _ value: Value,
         forKey key: Key,
-        cost: Cost? = nil
+        payload: Payload = .default
     ) -> Value? {
-        let cost = cost ?? self.defaultCost
-
-        if let index = self.indicesByKey[key] {
-            return self.replaceValue(
+        self.modifyStorage { storage in
+            storage.updateValue(
                 value,
                 forKey: key,
-                index: index,
-                cost: cost
+                payload: payload
             )
-        } else {
-            self.insertValue(
-                value,
-                forKey: key,
-                cost: cost
-            )
-            return nil
         }
     }
 
@@ -214,170 +117,49 @@ where
     public mutating func removeValue(
         forKey key: Key
     ) -> Value? {
-        guard let index = self.indicesByKey[key] else {
-            return nil
+        self.modifyStorage { storage in
+            storage.removeValue(
+                forKey: key
+            )
         }
-
-        self.policy.remove(index)
-
-        let element = self.removeValue(forIndex: index)
-
-        return element.value
     }
 
     @discardableResult
     public mutating func remove() -> Element? {
-        guard !self.isEmpty else {
-            return nil
+        self.modifyStorage { storage in
+            storage.remove()
         }
-
-        guard let index = self.policy.remove() else {
-            fatalError("Expected index, found nil")
-        }
-
-        let removed = self.removeValue(forIndex: index)
-        return removed
     }
 
     public mutating func removeAll() {
-        self.removeAll(keepingCapacity: false)
+        self.modifyStorage { storage in
+            storage.removeAll()
+        }
     }
 
     public mutating func removeAll(
         keepingCapacity keepCapacity: Bool
     ) {
-        self.indicesByKey.removeAll(keepingCapacity: keepCapacity)
-        self.elementsByIndex.removeAll(keepingCapacity: keepCapacity)
-        self.policy.removeAll(keepingCapacity: keepCapacity)
-    }
-
-    private mutating func value(
-        forIndex index: Index
-    ) -> Value {
-        guard let container = self.elementsByIndex[index] else {
-            fatalError("Expected element, found nil")
-        }
-
-        self.policy.use(index)
-
-        #if DEBUG
-        assert(self.isValid() != false)
-        #endif
-
-        return container.element.value
-    }
-
-    private mutating func insertValue(
-        _ value: Value,
-        forKey key: Key,
-        cost: Cost
-    ) {
-        // Evict excessive elements, if necessary:
-
-        if
-            let totalCostLimit = self.totalCostLimit,
-            (self.totalCost + cost) > totalCostLimit
-        {
-            // Remove one more, to make space for new element:
-
-            self.removeWhile(
-                totalCostAbove: totalCostLimit - cost
+        self.modifyStorage { storage in
+            storage.removeAll(
+                keepingCapacity: keepCapacity
             )
         }
-
-        let index = self.policy.insert()
-
-        self.indicesByKey[key] = index
-
-        self.elementsByIndex[index] = .init(
-            cost: cost,
-            element: (key: key, value: value)
-        )
-
-        self.totalCost += cost
-
-        #if DEBUG
-        assert(self.isValid() != false)
-        #endif
     }
 
-    private mutating func replaceValue(
-        _ value: Value,
-        forKey key: Key,
-        index: Index,
-        cost: Cost
-    ) -> Value? {
-        let container = ElementContainer(
-            cost: cost,
-            element: (key: key, value: value)
-        )
-
-        self.policy.use(index)
-
-        guard let oldValue = self.elementsByIndex.updateValue(
-            container,
-            forKey: index
-        ) else {
-            return nil
-        }
-
-        return oldValue.element.value
-    }
-
+    // Since `self.storage` has reference semantics we need to guard
+    // mutating access to it with `.isKnownUniquelyReferenced()`
+    // to ensure conforming to value semantics:
     @discardableResult
-    private mutating func removeValue(
-        forIndex index: Index
-    ) -> Element {
-        guard let container = self.elementsByIndex.removeValue(
-            forKey: index
-        ) else {
-            fatalError("Expected element, found nil")
+    private mutating func modifyStorage<T>(
+        closure: (inout Storage) throws -> T
+    ) rethrows -> T {
+        if !Swift.isKnownUniquelyReferenced(&self.storage) {
+            self.storage = Storage(self.storage)
         }
 
-        let key = container.element.key
-
-        guard let _ = self.indicesByKey.removeValue(
-            forKey: key
-        ) else {
-            fatalError("Expected index, found nil")
-        }
-
-        self.totalCost -= container.cost
-
-        #if DEBUG
-        assert(self.isValid() != false)
-        #endif
-
-        return container.element
+        return try closure(&self.storage)
     }
-
-    private mutating func removeWhile(totalCostAbove totalCostLimit: Cost) {
-        while (self.count > 0) && (self.totalCost > totalCostLimit) {
-            guard let _ = self.remove() else {
-                break
-            }
-        }
-    }
-
-    #if DEBUG
-    internal func isValid() -> Bool? {
-        guard shouldValidate else {
-            return nil
-        }
-
-        let uniqueCounts: Set<Int> = [
-            self.indicesByKey.count,
-            self.elementsByIndex.count,
-            self.policy.count,
-        ]
-
-        guard uniqueCounts.count == 1 else {
-            return false
-        }
-
-        return true
-    }
-    #endif
 }
 
 extension CustomCache: Equatable
@@ -385,27 +167,7 @@ where
     Value: Equatable
 {
     public static func == (lhs: Self, rhs: Self) -> Bool {
-        guard lhs.indicesByKey.count == rhs.indicesByKey.count else {
-            return false
-        }
-
-        for (key, lhsIndex) in lhs.indicesByKey {
-            guard let rhsIndex = rhs.indicesByKey[key] else {
-                return false
-            }
-
-            let lhsElement = lhs.elementsByIndex[lhsIndex]!.element
-            let rhsElement = rhs.elementsByIndex[rhsIndex]!.element
-
-            guard lhsElement.key == rhsElement.key else {
-                return false
-            }
-            guard lhsElement.value == rhsElement.value else {
-                return false
-            }
-        }
-
-        return true
+        lhs.storage == rhs.storage
     }
 }
 
@@ -414,32 +176,17 @@ where
     Value: Hashable
 {
     public func hash(into hasher: inout Hasher) {
-        var commutativeHash = 0
-        for index in self.indicesByKey.values {
-            guard let container = self.elementsByIndex[index] else {
-                continue
-            }
-
-            let (key, value) = container.element
-
-            var elementHasher = hasher
-            key.hash(into: &elementHasher)
-            value.hash(into: &elementHasher)
-
-            commutativeHash ^= elementHasher.finalize()
-        }
-        hasher.combine(commutativeHash)
+        self.storage.hash(into: &hasher)
     }
 }
 
 extension CustomCache: CustomStringConvertible {
     public var description: String {
         let typeName = String(describing: type(of: self))
-        let totalCostLimit = self.totalCostLimit.map { "\($0)" } ?? "nil"
         let elements = self.lazy.map { key, value in
             return "\(key): \(value)"
         }.joined(separator: ", ")
-        return "\(typeName)(totalCostLimit: \(totalCostLimit), elements: [\(elements)])"
+        return "\(typeName)(elements: [\(elements)])"
     }
 }
 
@@ -447,9 +194,6 @@ extension CustomCache: Sequence {
     public typealias Iterator = AnyIterator<Element>
 
     public func makeIterator() -> Iterator {
-        let elements = self.elementsByIndex.values.lazy.map { container in
-            container.element
-        }
-        return .init(elements.makeIterator())
+        self.storage.makeIterator()
     }
 }
