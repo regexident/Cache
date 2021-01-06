@@ -44,7 +44,6 @@ where
         elementsByIndex: [Index: Element],
         policy: Policy
     ) {
-
         self.indicesByKey = indicesByKey
         self.elementsByIndex = elementsByIndex
         self.policy = policy
@@ -56,12 +55,18 @@ where
         didMiss: UnsafeMutablePointer<Bool>? = nil,
         by closure: () throws -> Value
     ) rethrows -> Value {
-        if let index = self.indicesByKey[key] {
-            didMiss?.pointee = false
-            return self.value(
+        let indexOrNil = self.indicesByKey[key]
+
+        if let index = indexOrNil {
+            let valueOrNil = self.retrieveOrEvictValue(
                 forIndex: index,
                 payload: payload
             )
+
+            if let value = valueOrNil {
+                didMiss?.pointee = false
+                return value
+            }
         }
 
         let value = try closure()
@@ -85,7 +90,7 @@ where
             return nil
         }
 
-        return self.value(
+        return self.retrieveOrEvictValue(
             forIndex: index,
             payload: payload
         )
@@ -188,18 +193,26 @@ where
         self.policy.removeAll(keepingCapacity: keepCapacity)
     }
 
-    private func value(
+    private func retrieveOrEvictValue(
         forIndex index: Index,
         payload: Payload
-    ) -> Value {
+    ) -> Value? {
         guard let element = self.elementsByIndex[index] else {
             fatalError("Expected element, found nil")
         }
 
-        let newIndex = self.policy.use(
-            index,
-            payload: payload
-        )
+        let newIndex: Index?
+
+        switch self.policy.state(of: index) {
+        case .alive:
+            newIndex = self.policy.use(
+                index,
+                payload: payload
+            )
+        case .expired:
+            let _ = self.policy.remove(index)
+            newIndex = nil
+        }
 
         if newIndex != index {
             let elementOrNil = self.elementsByIndex.removeValue(
@@ -210,13 +223,21 @@ where
                 fatalError("Expected element, found nil")
             }
 
-            self.elementsByIndex[newIndex] = element
+            if let newIndex = newIndex {
+                self.elementsByIndex[newIndex] = element
+            }
+
             self.indicesByKey[element.key] = newIndex
         }
 
         #if DEBUG
         assert(self.isValid() != false)
         #endif
+
+        // Check
+        guard newIndex != nil else {
+            return nil
+        }
 
         return element.value
     }
