@@ -10,11 +10,6 @@ public struct NoPayload: DefaultCachePayload, Equatable {
     public static let `default`: Self = .init()
 }
 
-public enum CacheEvictionTrigger<Payload> {
-    case alloc(payload: Payload)
-    case trace
-}
-
 public protocol CachePolicy {
     /// The policy's index type.
     associatedtype Index: Hashable
@@ -25,11 +20,12 @@ public protocol CachePolicy {
     var isEmpty: Bool { get }
     var count: Int { get }
 
-    /// Evict one or more indices from the policy.
-    mutating func evictIfNeeded(
-        for trigger: CacheEvictionTrigger<Payload>,
-        callback: (Index) -> Void
-    )
+    /// Returns `true` if the policy has enough capacity to
+    /// add the provided additional `payload` without exceeding
+    /// its limits (if it has any), otherwise `false.`
+    ///
+    /// - Parameter payload: The additional payload to accomodate.
+    func hasCapacity(forPayload payload: Payload?) -> Bool
 
     /// Inserts a new index into the policy.
     mutating func insert(payload: Payload) -> Index

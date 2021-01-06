@@ -35,30 +35,19 @@ where
         self.maximumCapacity = maximumCapacity
     }
 
-    public mutating func evictIfNeeded(
-        for trigger: CacheEvictionTrigger<Payload>,
-        callback: (Index) -> Void
-    ) {
-        self.base.evictIfNeeded(
-            for: trigger,
-            callback: callback
-        )
+    public func hasCapacity(
+        forPayload payload: Payload?
+    ) -> Bool {
+        let requiredCapacity: Int
 
-        let maxCount: Int
-        switch trigger {
-        case .alloc:
-            maxCount = max(0, self.maximumCapacity - 1)
-        case .trace:
-            maxCount = self.maximumCapacity
+        switch payload {
+        case .some:
+            requiredCapacity = self.count + 1
+        case .none:
+            requiredCapacity = self.count
         }
 
-        while self.count > maxCount {
-            guard let (index, _) = self.base.remove() else {
-                break
-            }
-
-            callback(index)
-        }
+        return requiredCapacity <= self.maximumCapacity
     }
 
     public mutating func insert(payload: Payload) -> Index {

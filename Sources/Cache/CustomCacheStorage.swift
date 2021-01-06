@@ -220,13 +220,8 @@ where
         forKey key: Key,
         payload: Payload
     ) {
-        self.policy.evictIfNeeded(
-            for: .alloc(payload: payload)
-        ) { index in
-            let _ = self.removeValue(
-                forIndex: index,
-                validate: false
-            )
+        while !self.policy.hasCapacity(forPayload: payload) {
+            self.remove()
         }
 
         let index = self.policy.insert(payload: payload)

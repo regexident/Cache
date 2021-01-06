@@ -60,11 +60,10 @@ where
         self.deque = .init(minimumCapacity: minimumCapacity)
     }
 
-    public mutating func evictIfNeeded(
-        for trigger: CacheEvictionTrigger<Payload>,
-        callback: (Index) -> Void
-    ) {
-        // nothing
+    public func hasCapacity(
+        forPayload payload: Payload?
+    ) -> Bool {
+        true
     }
 
     public mutating func insert(payload: Payload) -> Index {

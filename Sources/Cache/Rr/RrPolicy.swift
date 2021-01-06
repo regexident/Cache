@@ -107,11 +107,10 @@ where
         self.generator = generator
     }
 
-    public mutating func evictIfNeeded(
-        for trigger: CacheEvictionTrigger<Payload>,
-        callback: (Index) -> Void
-    ) {
-        // FIXME!
+    public func hasCapacity(
+        forPayload payload: Payload?
+    ) -> Bool {
+        true
     }
 
     public mutating func insert(payload: Payload) -> Index {
