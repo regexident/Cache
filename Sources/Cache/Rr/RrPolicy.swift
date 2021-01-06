@@ -245,6 +245,12 @@ where
         return Self.globalPayload
     }
 
+    public mutating func removeExpired(
+        _ evictionCallback: (Index) -> Void
+    ) {
+        // do nothing
+    }
+
     @inlinable
     @inline(__always)
     public mutating func removeAll() {

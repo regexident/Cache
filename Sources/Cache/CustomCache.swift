@@ -177,6 +177,12 @@ where
         }
     }
 
+    public mutating func removeExpired() {
+        self.modifyStorage { storage in
+            storage.removeExpired()
+        }
+    }
+
     public mutating func removeAll() {
         self.removeAll(keepingCapacity: false)
     }

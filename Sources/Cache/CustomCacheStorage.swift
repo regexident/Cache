@@ -170,6 +170,12 @@ where
         return removed
     }
 
+    public func removeExpired() {
+        self.policy.removeExpired { index in
+            self.removeValue(forIndex: index)
+        }
+    }
+
     internal func removeAll() {
         self.removeAll(keepingCapacity: false)
     }

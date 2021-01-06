@@ -83,6 +83,12 @@ where
         self.base.remove(index)
     }
 
+    public mutating func removeExpired(
+        _ evictionCallback: (Index) -> Void
+    ) {
+        self.base.removeExpired(evictionCallback)
+    }
+
     public mutating func removeAll() {
         self.removeAll(keepingCapacity: false)
     }

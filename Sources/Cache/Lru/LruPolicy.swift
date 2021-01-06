@@ -143,6 +143,12 @@ where
         return self.deque.remove(at: index)
     }
 
+    public mutating func removeExpired(
+        _ evictionCallback: (Index) -> Void
+    ) {
+        // do nothing
+    }
+
     @inlinable
     @inline(__always)
     public mutating func removeAll() {

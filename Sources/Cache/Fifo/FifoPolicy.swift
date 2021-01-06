@@ -68,6 +68,12 @@ where
         self.deque.remove(at: index)
     }
 
+    public mutating func removeExpired(
+        _ evictionCallback: (Index) -> Void
+    ) {
+        // do nothing
+    }
+
     public mutating func removeAll() {
         self.removeAll(keepingCapacity: false)
     }

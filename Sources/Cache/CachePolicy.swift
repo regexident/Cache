@@ -49,6 +49,10 @@ public protocol CachePolicy {
     /// Removed a index.
     mutating func remove(_ index: Index) -> Payload
 
+    mutating func removeExpired(
+        _ evictionCallback: (Index) -> Void
+    )
+
     /// Removes all indices from the policy.
     mutating func removeAll()
 
