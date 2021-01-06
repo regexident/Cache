@@ -54,8 +54,11 @@ where
         self.deque.pushFront(element: payload)
     }
 
-    public mutating func use(_ index: Index) {
-        // do nothing
+    public mutating func use(
+        _ index: Index,
+        payload: Payload
+    ) -> Index {
+        return index
     }
 
     public mutating func remove() -> (index: Index, payload: Payload)? {
@@ -74,7 +77,9 @@ where
         self.removeAll(keepingCapacity: false)
     }
 
-    public mutating func removeAll(keepingCapacity keepCapacity: Bool) {
+    public mutating func removeAll(
+        keepingCapacity keepCapacity: Bool
+    ) {
         self.deque.removeAll(keepingCapacity: keepCapacity)
     }
 }

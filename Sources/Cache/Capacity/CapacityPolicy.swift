@@ -75,8 +75,11 @@ where
         return self.base.insert(payload: payload)
     }
 
-    public mutating func use(_ index: Index) {
-        self.base.use(index)
+    public mutating func use(
+        _ index: Index,
+        payload: Payload
+    ) -> Index {
+        self.base.use(index, payload: payload)
     }
 
     public mutating func remove() -> (index: Index, payload: Payload)? {

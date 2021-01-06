@@ -35,7 +35,10 @@ public protocol CachePolicy {
     mutating func insert(payload: Payload) -> Index
 
     /// Marks a index as used.
-    mutating func use(_ index: Index)
+    mutating func use(
+        _ index: Index,
+        payload: Payload
+    ) -> Index
 
     /// Removes a index chosen by the policy.
     mutating func remove() -> (index: Index, payload: Payload)?

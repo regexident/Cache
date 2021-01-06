@@ -97,7 +97,7 @@ final class FifoPolicyTests: XCTestCase {
         XCTAssertEqual(policy.deque.firstFree, nil)
 
         let index: Index = .init(2)
-        policy.use(index)
+        policy.use(index, payload: .default)
 
         XCTAssertEqual(policy.deque.head, 4)
         XCTAssertEqual(policy.deque.tail, 0)

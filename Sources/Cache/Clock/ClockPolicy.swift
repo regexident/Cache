@@ -181,7 +181,10 @@ where
         return index
     }
 
-    public mutating func use(_ index: Index) {
+    public mutating func use(
+        _ index: Index,
+        payload: Payload
+    ) -> Index {
         #if DEBUG
         logger.trace("\(type(of: self)).\(#function)")
         self.logState(to: logger)
@@ -200,6 +203,8 @@ where
         assert(self.blocks[chunkIndex].isOccupied(mask: indexMask))
 
         self.blocks[chunkIndex].reference(mask: indexMask)
+
+        return index
     }
 
     public mutating func remove() -> (index: Index, payload: Payload)? {

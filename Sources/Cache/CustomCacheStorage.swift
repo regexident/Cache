@@ -58,7 +58,10 @@ where
     ) rethrows -> Value {
         if let index = self.indicesByKey[key] {
             didMiss?.pointee = false
-            return self.value(forIndex: index)
+            return self.value(
+                forIndex: index,
+                payload: payload
+            )
         }
 
         let value = try closure()
@@ -75,13 +78,17 @@ where
     }
 
     internal func value(
-        forKey key: Key
+        forKey key: Key,
+        payload: Payload
     ) -> Value? {
         guard let index = self.indicesByKey[key] else {
             return nil
         }
 
-        return self.value(forIndex: index)
+        return self.value(
+            forIndex: index,
+            payload: payload
+        )
     }
 
     internal func peekValue(
@@ -176,13 +183,30 @@ where
     }
 
     private func value(
-        forIndex index: Index
+        forIndex index: Index,
+        payload: Payload
     ) -> Value {
         guard let element = self.elementsByIndex[index] else {
             fatalError("Expected element, found nil")
         }
 
-        self.policy.use(index)
+        let newIndex = self.policy.use(
+            index,
+            payload: payload
+        )
+
+        if newIndex != index {
+            let elementOrNil = self.elementsByIndex.removeValue(
+                forKey: index
+            )
+
+            guard let element = elementOrNil else {
+                fatalError("Expected element, found nil")
+            }
+
+            self.elementsByIndex[newIndex] = element
+            self.indicesByKey[element.key] = newIndex
+        }
 
         #if DEBUG
         assert(self.isValid() != false)
@@ -221,18 +245,21 @@ where
         index: Index,
         payload: Payload
     ) -> Value? {
-        let container = (key: key, value: value)
+        let element = (key: key, value: value)
 
-        self.policy.use(index)
+        let newIndex = self.policy.use(
+            index,
+            payload: payload
+        )
 
-        guard let oldValue = self.elementsByIndex.updateValue(
-            container,
+        let oldElement = self.elementsByIndex.removeValue(
             forKey: index
-        ) else {
-            return nil
-        }
+        )
 
-        return oldValue.value
+        self.elementsByIndex[newIndex] = element
+        self.indicesByKey[element.key] = newIndex
+
+        return oldElement?.value
     }
 
     @discardableResult

@@ -107,10 +107,16 @@ where
     }
 
     public mutating func value(
-        forKey key: Key
+        forKey key: Key,
+        payload: Payload? = nil
     ) -> Value? {
-        self.modifyStorage { storage in
-            storage.value(forKey: key)
+        let payload = payload ?? self.defaultPayload
+
+        return self.modifyStorage { storage in
+            storage.value(
+                forKey: key,
+                payload: payload
+            )
         }
     }
 

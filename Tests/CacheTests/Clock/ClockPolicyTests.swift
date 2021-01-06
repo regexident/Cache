@@ -106,9 +106,13 @@ final class ClockPolicyTests: XCTestCase {
             removeCursor: .init(3)
         )
 
+        var index: Index
+
         // Use referenced index:
 
-        policy.use(.init(3))
+        index = policy.use(.init(3), payload: .default)
+
+        XCTAssertEqual(index, .init(3))
 
         XCTAssertEqual(policy.count, 3)
         XCTAssertEqual(policy.occupiedBits, [0b00011010])
@@ -118,7 +122,9 @@ final class ClockPolicyTests: XCTestCase {
 
         // Use unreferenced index:
 
-        policy.use(.init(3))
+        index = policy.use(.init(3), payload: .default)
+
+        XCTAssertEqual(index, .init(3))
 
         XCTAssertEqual(policy.count, 3)
         XCTAssertEqual(policy.occupiedBits, [0b00011010])

@@ -84,7 +84,9 @@ final class RrPolicyTests: XCTestCase {
             chunkBits: [0b00011010]
         )
 
-        policy.use(.init(3))
+        let index = policy.use(.init(3), payload: .default)
+
+        XCTAssertEqual(index, .init(3))
 
         // RrPolicy does not do anything on `.use(…)`
         // so we shouldn't see any change either:

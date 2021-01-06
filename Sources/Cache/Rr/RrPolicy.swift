@@ -164,10 +164,13 @@ where
         return index
     }
 
-    public mutating func use(_ index: Index) {
+    public mutating func use(
+        _ index: Index,
+        payload: Payload
+    ) -> Index {
         logger.trace("\(type(of: self)).\(#function)")
 
-        // ignored
+        return index
     }
 
     public mutating func remove() -> (index: Index, payload: Payload)? {

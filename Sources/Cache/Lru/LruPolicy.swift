@@ -91,7 +91,10 @@ where
         return self.deque.pushFront(element: payload)
     }
 
-    public mutating func use(_ index: Index) {
+    public mutating func use(
+        _ index: Index,
+        payload: Payload
+    ) -> Index {
         #if DEBUG
         logger.trace("\(type(of: self)).\(#function)")
         self.logState(to: logger)
@@ -104,7 +107,9 @@ where
         }
         #endif
 
-        return self.deque.moveToFront(index)
+        self.deque.moveToFront(index)
+
+        return index
     }
 
     public mutating func remove() -> (index: Index, payload: Payload)? {
