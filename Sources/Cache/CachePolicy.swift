@@ -10,6 +10,11 @@ public struct NoPayload: DefaultCachePayload, Equatable {
     public static let `default`: Self = .init()
 }
 
+public enum CachePolicyIndexState: Equatable {
+    case alive
+    case expired
+}
+
 public protocol CachePolicy {
     /// The policy's index type.
     associatedtype Index: Hashable
@@ -26,6 +31,8 @@ public protocol CachePolicy {
     ///
     /// - Parameter payload: The additional payload to accomodate.
     func hasCapacity(forPayload payload: Payload?) -> Bool
+
+    func state(of index: Index) -> CachePolicyIndexState
 
     /// Inserts a new index into the policy.
     mutating func insert(payload: Payload) -> Index

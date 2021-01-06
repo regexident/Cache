@@ -41,6 +41,10 @@ where
         true
     }
 
+    public func state(of index: Index) -> CachePolicyIndexState {
+        .alive
+    }
+
     public mutating func insert(payload: Payload) -> Index {
         self.deque.pushFront(element: payload)
     }

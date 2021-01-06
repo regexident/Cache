@@ -50,6 +50,10 @@ where
         return requiredCapacity <= self.maximumCapacity
     }
 
+    public func state(of index: Index) -> CachePolicyIndexState {
+        self.base.state(of: index)
+    }
+
     public mutating func insert(payload: Payload) -> Index {
         // Evict excessive elements, if necessary:
 

@@ -116,6 +116,10 @@ where
         true
     }
 
+    public func state(of index: Index) -> CachePolicyIndexState {
+        .alive
+    }
+
     public mutating func insert(payload: Payload) -> Index {
         #if DEBUG
         logger.trace("\(type(of: self)).\(#function)")
