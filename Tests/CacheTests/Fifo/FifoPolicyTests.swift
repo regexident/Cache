@@ -175,7 +175,6 @@ final class FifoPolicyTests: XCTestCase {
         ])
         XCTAssertEqual(policy.deque.firstFree, nil)
 
-        // depolicy head:
         let _ = policy.remove(.init(4))
 
         XCTAssertEqual(policy.deque.head, 3)
@@ -205,7 +204,6 @@ final class FifoPolicyTests: XCTestCase {
         ])
         XCTAssertEqual(policy.deque.firstFree, 4)
 
-        // depolicy middle:
         let _ = policy.remove(.init(2))
 
         XCTAssertEqual(policy.deque.head, 3)
@@ -231,7 +229,6 @@ final class FifoPolicyTests: XCTestCase {
         ])
         XCTAssertEqual(policy.deque.firstFree, 2)
 
-        // depolicy tail:
         let _ = policy.remove(.init(0))
 
         XCTAssertEqual(policy.deque.head, 3)
