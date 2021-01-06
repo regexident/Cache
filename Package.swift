@@ -42,10 +42,17 @@ let package = Package(
                 )
             ]
         ),
+        .target(
+            name: "CacheKeyGenerators",
+            dependencies: [
+                "PseudoRandom",
+            ]
+        ),
         .testTarget(
             name: "CacheTests",
             dependencies: [
                 "Cache",
+                "CacheKeyGenerators",
             ]
         ),
         .target(
@@ -53,6 +60,7 @@ let package = Package(
             dependencies: [
                 "Benchmark",
                 "Cache",
+                "CacheKeyGenerators",
                 .product(
                     name: "ArgumentParser",
                     package: "swift-argument-parser"
