@@ -54,5 +54,7 @@ public protocol CachePolicy {
     ///   - keepCapacity:
     ///     Pass `true` to keep the existing capacity of
     ///     the policy after removing its indices.
-    mutating func removeAll(keepingCapacity keepCapacity: Bool)
+    mutating func removeAll(
+        keepingCapacity keepCapacity: Bool
+    )
 }

@@ -94,7 +94,9 @@ where
         self.removeAll(keepingCapacity: false)
     }
 
-    public mutating func removeAll(keepingCapacity keepCapacity: Bool) {
+    public mutating func removeAll(
+        keepingCapacity keepCapacity: Bool
+    ) {
         self.base.removeAll(keepingCapacity: keepCapacity)
     }
 }
