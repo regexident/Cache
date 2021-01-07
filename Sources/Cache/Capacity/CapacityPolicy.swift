@@ -9,7 +9,7 @@ where
     Base: CachePolicy
 {
     public typealias Index = Base.Index
-    public typealias Payload = Base.Payload
+    public typealias Metadata = Base.Metadata
 
     public var isEmpty: Bool {
         self.base.isEmpty
@@ -36,11 +36,11 @@ where
     }
 
     public func hasCapacity(
-        forPayload payload: Payload?
+        forMetadata metadata: Metadata?
     ) -> Bool {
         let requiredCapacity: Int
 
-        switch payload {
+        switch metadata {
         case .some:
             requiredCapacity = self.count + 1
         case .none:
@@ -54,7 +54,7 @@ where
         self.base.state(of: index)
     }
 
-    public mutating func insert(payload: Payload) -> Index {
+    public mutating func insert(metadata: Metadata) -> Index {
         // Evict excessive elements, if necessary:
 
         if self.count >= self.maximumCapacity {
@@ -65,21 +65,21 @@ where
             }
         }
 
-        return self.base.insert(payload: payload)
+        return self.base.insert(metadata: metadata)
     }
 
     public mutating func use(
         _ index: Index,
-        payload: Payload
+        metadata: Metadata
     ) -> Index {
-        self.base.use(index, payload: payload)
+        self.base.use(index, metadata: metadata)
     }
 
-    public mutating func remove() -> (index: Index, payload: Payload)? {
+    public mutating func remove() -> (index: Index, metadata: Metadata)? {
         self.base.remove()
     }
 
-    public mutating func remove(_ index: Index) -> Payload {
+    public mutating func remove(_ index: Index) -> Metadata {
         self.base.remove(index)
     }
 

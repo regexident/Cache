@@ -21,14 +21,14 @@ final class FifoPolicyTests: XCTestCase {
     func testHasCapacity() throws {
         let policy = Policy()
 
-        XCTAssertTrue(policy.hasCapacity(forPayload: nil))
-        XCTAssertTrue(policy.hasCapacity(forPayload: .default))
+        XCTAssertTrue(policy.hasCapacity(forMetadata: nil))
+        XCTAssertTrue(policy.hasCapacity(forMetadata: .default))
     }
 
     func testStateOf() throws {
         var policy = Policy()
 
-        let index = policy.insert(payload: .default)
+        let index = policy.insert(metadata: .default)
 
         XCTAssertEqual(policy.state(of: index), .alive)
     }
@@ -36,7 +36,7 @@ final class FifoPolicyTests: XCTestCase {
     func testInsert() throws {
         var policy = Policy()
 
-        let head = policy.insert(payload: .default)
+        let head = policy.insert(metadata: .default)
 
         XCTAssertFalse(policy.isEmpty)
         XCTAssertEqual(policy.count, 1)
@@ -52,7 +52,7 @@ final class FifoPolicyTests: XCTestCase {
         ])
         XCTAssertNil(policy.deque.firstFree)
 
-        let newHead = policy.insert(payload: .default)
+        let newHead = policy.insert(metadata: .default)
 
         XCTAssertEqual(policy.deque.head, newHead.rawValue)
         XCTAssertEqual(policy.deque.tail, head.rawValue)
@@ -75,7 +75,7 @@ final class FifoPolicyTests: XCTestCase {
         var policy = Policy()
 
         for _ in 0..<5 {
-            let _ = policy.insert(payload: .default)
+            let _ = policy.insert(metadata: .default)
         }
 
         XCTAssertEqual(policy.deque.head, 4)
@@ -110,7 +110,7 @@ final class FifoPolicyTests: XCTestCase {
         XCTAssertEqual(policy.deque.firstFree, nil)
 
         let index: Index = .init(2)
-        let newIndex = policy.use(index, payload: .default)
+        let newIndex = policy.use(index, metadata: .default)
 
         XCTAssertEqual(index, newIndex)
 
@@ -150,7 +150,7 @@ final class FifoPolicyTests: XCTestCase {
         var policy = Policy()
 
         for _ in 0..<3 {
-            let _ = policy.insert(payload: .default)
+            let _ = policy.insert(metadata: .default)
         }
 
         let (index, _) = try XCTUnwrap(policy.remove())
@@ -162,7 +162,7 @@ final class FifoPolicyTests: XCTestCase {
         var policy = Policy()
 
         for _ in 0..<5 {
-            let _ = policy.insert(payload: .default)
+            let _ = policy.insert(metadata: .default)
         }
 
         XCTAssertEqual(policy.deque.head, 4)
@@ -276,7 +276,7 @@ final class FifoPolicyTests: XCTestCase {
         var policy = Policy()
 
         for _ in 0..<3 {
-            let _ = policy.insert(payload: .default)
+            let _ = policy.insert(metadata: .default)
         }
 
         policy.removeExpired { index in
@@ -290,7 +290,7 @@ final class FifoPolicyTests: XCTestCase {
         var policy = Policy()
 
         for _ in 0..<3 {
-            let _ = policy.insert(payload: .default)
+            let _ = policy.insert(metadata: .default)
         }
 
         XCTAssertEqual(policy.deque.head, 2)
@@ -328,7 +328,7 @@ final class FifoPolicyTests: XCTestCase {
         var policy = Policy()
 
         for _ in 0..<3 {
-            let _ = policy.insert(payload: .default)
+            let _ = policy.insert(metadata: .default)
         }
 
         XCTAssertEqual(policy.deque.head, 2)

@@ -20,14 +20,14 @@ final class RrPolicyTests: XCTestCase {
     func testHasCapacity() throws {
         let policy = Policy()
 
-        XCTAssertTrue(policy.hasCapacity(forPayload: nil))
-        XCTAssertTrue(policy.hasCapacity(forPayload: .default))
+        XCTAssertTrue(policy.hasCapacity(forMetadata: nil))
+        XCTAssertTrue(policy.hasCapacity(forMetadata: .default))
     }
 
     func testStateOf() throws {
         var policy = Policy()
 
-        let index = policy.insert(payload: .default)
+        let index = policy.insert(metadata: .default)
 
         XCTAssertEqual(policy.state(of: index), .alive)
     }
@@ -35,7 +35,7 @@ final class RrPolicyTests: XCTestCase {
     func testInsertIntoEmptyPolicy() throws {
         var policy = Policy()
 
-        let index = policy.insert(payload: .default)
+        let index = policy.insert(metadata: .default)
 
         XCTAssertEqual(index.absoluteBitIndex, 0)
 
@@ -48,14 +48,14 @@ final class RrPolicyTests: XCTestCase {
         var policy = Policy()
 
         for _ in 0..<3 {
-            let _ = policy.insert(payload: .default)
+            let _ = policy.insert(metadata: .default)
         }
 
         XCTAssertFalse(policy.isEmpty)
         XCTAssertEqual(policy.count, 3)
         XCTAssertEqual(policy.chunkBits, [0b00000111])
 
-        let index = policy.insert(payload: .default)
+        let index = policy.insert(metadata: .default)
 
         XCTAssertEqual(index.absoluteBitIndex, 3)
 
@@ -70,7 +70,7 @@ final class RrPolicyTests: XCTestCase {
             chunkBits: [0b00011001]
         )
 
-        let index = policy.insert(payload: .default)
+        let index = policy.insert(metadata: .default)
 
         XCTAssertEqual(index.absoluteBitIndex, 1)
         XCTAssertEqual(policy.count, 4)
@@ -83,7 +83,7 @@ final class RrPolicyTests: XCTestCase {
             chunkBits: [0b11111111]
         )
 
-        let index = policy.insert(payload: .default)
+        let index = policy.insert(metadata: .default)
 
         XCTAssertEqual(index.absoluteBitIndex, 8)
         XCTAssertEqual(policy.count, 9)
@@ -96,7 +96,7 @@ final class RrPolicyTests: XCTestCase {
             chunkBits: [0b00011010]
         )
 
-        let index = policy.use(.init(3), payload: .default)
+        let index = policy.use(.init(3), metadata: .default)
 
         XCTAssertEqual(index, .init(3))
 
@@ -124,7 +124,7 @@ final class RrPolicyTests: XCTestCase {
         var policy = Policy()
 
         for _ in 0..<3 {
-            let _ = policy.insert(payload: .default)
+            let _ = policy.insert(metadata: .default)
         }
 
         XCTAssertEqual(policy.count, 3)
@@ -176,7 +176,7 @@ final class RrPolicyTests: XCTestCase {
         var policy = Policy()
 
         for _ in 0..<3 {
-            let _ = policy.insert(payload: .default)
+            let _ = policy.insert(metadata: .default)
         }
 
         policy.removeExpired { index in
@@ -190,7 +190,7 @@ final class RrPolicyTests: XCTestCase {
         var policy = Policy()
 
         for _ in 0..<3 {
-            let _ = policy.insert(payload: .default)
+            let _ = policy.insert(metadata: .default)
         }
 
         policy.removeAll()
@@ -204,7 +204,7 @@ final class RrPolicyTests: XCTestCase {
         var policy = Policy()
 
         for _ in 0..<3 {
-            let _ = policy.insert(payload: .default)
+            let _ = policy.insert(metadata: .default)
         }
 
         let capacity = policy.capacity

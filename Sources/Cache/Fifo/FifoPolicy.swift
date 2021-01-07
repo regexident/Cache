@@ -10,10 +10,10 @@ public struct CustomFifoPolicy<RawIndex>: CachePolicy
 where
     RawIndex: BinaryInteger
 {
-    public typealias Index = BufferedDeque<Payload, RawIndex>.Index
-    public typealias Payload = NoPayload
+    public typealias Index = BufferedDeque<Metadata, RawIndex>.Index
+    public typealias Metadata = NoMetadata
 
-    internal typealias Deque = BufferedDeque<Payload, RawIndex>
+    internal typealias Deque = BufferedDeque<Metadata, RawIndex>
     
     public var isEmpty: Bool {
         self.deque.isEmpty
@@ -36,7 +36,7 @@ where
     }
 
     public func hasCapacity(
-        forPayload payload: Payload?
+        forMetadata metadata: Metadata?
     ) -> Bool {
         true
     }
@@ -45,26 +45,26 @@ where
         .alive
     }
 
-    public mutating func insert(payload: Payload) -> Index {
-        self.deque.pushFront(element: payload)
+    public mutating func insert(metadata: Metadata) -> Index {
+        self.deque.pushFront(element: metadata)
     }
 
     public mutating func use(
         _ index: Index,
-        payload: Payload
+        metadata: Metadata
     ) -> Index {
         return index
     }
 
-    public mutating func remove() -> (index: Index, payload: Payload)? {
-        guard let (index, payload) = self.deque.popBack() else {
+    public mutating func remove() -> (index: Index, metadata: Metadata)? {
+        guard let (index, metadata) = self.deque.popBack() else {
             return nil
         }
 
-        return (index, payload)
+        return (index, metadata)
     }
 
-    public mutating func remove(_ index: Index) -> Payload {
+    public mutating func remove(_ index: Index) -> Metadata {
         self.deque.remove(at: index)
     }
 

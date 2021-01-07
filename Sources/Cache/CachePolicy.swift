@@ -2,11 +2,11 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-public protocol DefaultCachePayload {
+public protocol DefaultCacheMetadata {
     static var `default`: Self { get }
 }
 
-public struct NoPayload: DefaultCachePayload, Equatable {
+public struct NoMetadata: DefaultCacheMetadata, Equatable {
     public static let `default`: Self = .init()
 }
 
@@ -19,8 +19,8 @@ public protocol CachePolicy {
     /// The policy's index type.
     associatedtype Index: Hashable
 
-    /// The policy's payload type.
-    associatedtype Payload
+    /// The policy's metadata type.
+    associatedtype Metadata
 
     /// A Boolean value indicating whether the policy is empty.
     var isEmpty: Bool { get }
@@ -29,11 +29,11 @@ public protocol CachePolicy {
     var count: Int { get }
 
     /// Returns `true` if the policy has enough capacity to
-    /// add the provided additional `payload` without exceeding
+    /// add the provided additional `metadata` without exceeding
     /// its limits (if it has any), otherwise `false.`
     ///
-    /// - Parameter payload: The additional payload to accomodate.
-    func hasCapacity(forPayload payload: Payload?) -> Bool
+    /// - Parameter metadata: The additional metadata to accomodate.
+    func hasCapacity(forMetadata metadata: Metadata?) -> Bool
 
     /// Returns the lazy state of an index.
     ///
@@ -46,8 +46,8 @@ public protocol CachePolicy {
 
     /// Inserts a new index into the policy.
     ///
-    /// - Parameter payload: The payload to attach to the index
-    mutating func insert(payload: Payload) -> Index
+    /// - Parameter metadata: The metadata to attach to the index
+    mutating func insert(metadata: Metadata) -> Index
 
     /// Marks a index as used.
     ///
@@ -57,11 +57,11 @@ public protocol CachePolicy {
     ///
     /// - Parameters:
     ///   - index: The index to mark as used
-    ///   - payload: The payload to attach to the index
-    mutating func use(_ index: Index, payload: Payload) -> Index
+    ///   - metadata: The metadata to attach to the index
+    mutating func use(_ index: Index, metadata: Metadata) -> Index
 
     /// Removes an index chosen by the policy, if possible.
-    mutating func remove() -> (index: Index, payload: Payload)?
+    mutating func remove() -> (index: Index, metadata: Metadata)?
 
     /// Removes a index.
     ///
@@ -70,7 +70,7 @@ public protocol CachePolicy {
     ///   are contained in the cache at the given time.
     ///
     /// - Parameter index: The index to remove
-    mutating func remove(_ index: Index) -> Payload
+    mutating func remove(_ index: Index) -> Metadata
 
     /// Removed expired indices, calling `callback` for each of them.
     ///

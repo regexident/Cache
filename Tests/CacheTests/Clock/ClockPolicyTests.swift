@@ -19,14 +19,14 @@ final class ClockPolicyTests: XCTestCase {
     func testHasCapacity() throws {
         let policy = Policy()
 
-        XCTAssertTrue(policy.hasCapacity(forPayload: nil))
-        XCTAssertTrue(policy.hasCapacity(forPayload: .default))
+        XCTAssertTrue(policy.hasCapacity(forMetadata: nil))
+        XCTAssertTrue(policy.hasCapacity(forMetadata: .default))
     }
 
     func testStateOf() throws {
         var policy = Policy()
 
-        let index = policy.insert(payload: .default)
+        let index = policy.insert(metadata: .default)
 
         XCTAssertEqual(policy.state(of: index), .alive)
     }
@@ -34,7 +34,7 @@ final class ClockPolicyTests: XCTestCase {
     func testInsertIntoEmptyPolicy() throws {
         var policy = Policy()
 
-        let index = policy.insert(payload: .default)
+        let index = policy.insert(metadata: .default)
 
         XCTAssertEqual(index.absoluteBitIndex, 0)
 
@@ -50,7 +50,7 @@ final class ClockPolicyTests: XCTestCase {
         var policy = Policy()
 
         for _ in 0..<3 {
-            let _ = policy.insert(payload: .default)
+            let _ = policy.insert(metadata: .default)
         }
 
         XCTAssertEqual(policy.count, 3)
@@ -59,7 +59,7 @@ final class ClockPolicyTests: XCTestCase {
         XCTAssertEqual(policy.cursors.insert, .init(3))
         XCTAssertEqual(policy.cursors.remove, .init(0))
 
-        let index = policy.insert(payload: .default)
+        let index = policy.insert(metadata: .default)
 
         XCTAssertEqual(index.absoluteBitIndex, 3)
         XCTAssertEqual(policy.count, 4)
@@ -78,7 +78,7 @@ final class ClockPolicyTests: XCTestCase {
             removeCursor: .init(3)
         )
 
-        let index = policy.insert(payload: .default)
+        let index = policy.insert(metadata: .default)
 
         XCTAssertEqual(index.absoluteBitIndex, 5)
         XCTAssertEqual(policy.count, 4)
@@ -97,7 +97,7 @@ final class ClockPolicyTests: XCTestCase {
             removeCursor: .init(3)
         )
 
-        let index = policy.insert(payload: .default)
+        let index = policy.insert(metadata: .default)
 
         XCTAssertEqual(index.absoluteBitIndex, 8)
         XCTAssertEqual(policy.count, 9)
@@ -120,7 +120,7 @@ final class ClockPolicyTests: XCTestCase {
 
         // Use referenced index:
 
-        index = policy.use(.init(3), payload: .default)
+        index = policy.use(.init(3), metadata: .default)
 
         XCTAssertEqual(index, .init(3))
 
@@ -132,7 +132,7 @@ final class ClockPolicyTests: XCTestCase {
 
         // Use unreferenced index:
 
-        index = policy.use(.init(3), payload: .default)
+        index = policy.use(.init(3), metadata: .default)
 
         XCTAssertEqual(index, .init(3))
 
@@ -166,7 +166,7 @@ final class ClockPolicyTests: XCTestCase {
         var policy = Policy()
 
         for _ in 0..<3 {
-            let _ = policy.insert(payload: .default)
+            let _ = policy.insert(metadata: .default)
         }
 
         XCTAssertEqual(policy.count, 3)
@@ -242,7 +242,7 @@ final class ClockPolicyTests: XCTestCase {
         var policy = Policy()
 
         for _ in 0..<3 {
-            let _ = policy.insert(payload: .default)
+            let _ = policy.insert(metadata: .default)
         }
 
         policy.removeExpired { index in
@@ -256,7 +256,7 @@ final class ClockPolicyTests: XCTestCase {
         var policy = Policy()
 
         for _ in 0..<3 {
-            let _ = policy.insert(payload: .default)
+            let _ = policy.insert(metadata: .default)
         }
 
         policy.removeAll()
@@ -273,7 +273,7 @@ final class ClockPolicyTests: XCTestCase {
         var policy = Policy()
 
         for _ in 0..<3 {
-            let _ = policy.insert(payload: .default)
+            let _ = policy.insert(metadata: .default)
         }
 
         let capacity = policy.capacity

@@ -8,7 +8,7 @@ where
     Policy: CachePolicy
 {
     internal typealias Element = (key: Key, value: Value)
-    internal typealias Payload = Policy.Payload
+    internal typealias Metadata = Policy.Metadata
     internal typealias Index = Policy.Index
 
     /// Complexity: O(`1`).
@@ -51,7 +51,7 @@ where
 
     internal func cachedValue(
         forKey key: Key,
-        payload: Payload,
+        metadata: Metadata,
         didMiss: UnsafeMutablePointer<Bool>? = nil,
         by closure: () throws -> Value
     ) rethrows -> Value {
@@ -60,7 +60,7 @@ where
         if let index = indexOrNil {
             let valueOrNil = self.retrieveOrEvictValue(
                 forIndex: index,
-                payload: payload
+                metadata: metadata
             )
 
             if let value = valueOrNil {
@@ -74,7 +74,7 @@ where
         self.setValue(
             value,
             forKey: key,
-            payload: payload
+            metadata: metadata
         )
 
         didMiss?.pointee = true
@@ -84,7 +84,7 @@ where
 
     internal func value(
         forKey key: Key,
-        payload: Payload
+        metadata: Metadata
     ) -> Value? {
         guard let index = self.indicesByKey[key] else {
             return nil
@@ -92,7 +92,7 @@ where
 
         return self.retrieveOrEvictValue(
             forIndex: index,
-            payload: payload
+            metadata: metadata
         )
     }
 
@@ -113,34 +113,34 @@ where
     internal func setValue(
         _ value: Value?,
         forKey key: Key,
-        payload: Payload
+        metadata: Metadata
     ) {
         guard let value = value else {
             self.removeValue(forKey: key)
             return
         }
 
-        self.updateValue(value, forKey: key, payload: payload)
+        self.updateValue(value, forKey: key, metadata: metadata)
     }
 
     @discardableResult
     internal func updateValue(
         _ value: Value,
         forKey key: Key,
-        payload: Payload
+        metadata: Metadata
     ) -> Value? {
         if let index = self.indicesByKey[key] {
             return self.replaceValue(
                 value,
                 forKey: key,
                 index: index,
-                payload: payload
+                metadata: metadata
             )
         } else {
             self.insertValue(
                 value,
                 forKey: key,
-                payload: payload
+                metadata: metadata
             )
             return nil
         }
@@ -195,7 +195,7 @@ where
 
     private func retrieveOrEvictValue(
         forIndex index: Index,
-        payload: Payload
+        metadata: Metadata
     ) -> Value? {
         guard let element = self.elementsByIndex[index] else {
             fatalError("Expected element, found nil")
@@ -207,7 +207,7 @@ where
         case .alive:
             newIndex = self.policy.use(
                 index,
-                payload: payload
+                metadata: metadata
             )
         case .expired:
             let _ = self.policy.remove(index)
@@ -245,13 +245,13 @@ where
     private func insertValue(
         _ value: Value,
         forKey key: Key,
-        payload: Payload
+        metadata: Metadata
     ) {
-        while !self.policy.hasCapacity(forPayload: payload) {
+        while !self.policy.hasCapacity(forMetadata: metadata) {
             self.remove()
         }
 
-        let index = self.policy.insert(payload: payload)
+        let index = self.policy.insert(metadata: metadata)
 
         self.indicesByKey[key] = index
         self.elementsByIndex[index] = (key: key, value: value)
@@ -265,13 +265,13 @@ where
         _ value: Value,
         forKey key: Key,
         index: Index,
-        payload: Payload
+        metadata: Metadata
     ) -> Value? {
         let element = (key: key, value: value)
 
         let newIndex = self.policy.use(
             index,
-            payload: payload
+            metadata: metadata
         )
 
         let oldElement = self.elementsByIndex.removeValue(

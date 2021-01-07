@@ -22,15 +22,15 @@ where
     Generator: InitializableRandomNumberGenerator
 {
     public typealias Index = ChunkedBitIndex
-    public typealias Payload = NoPayload
+    public typealias Metadata = NoMetadata
 
     internal typealias Chunk = BitChunk<Bits>
 
     // Since there is only a single possible instance
-    // of `Payload` (aka `NoPayload`) we
-    // access it via `Self.globalPayload` to make
+    // of `Metadata` (aka `NoMetadata`) we
+    // access it via `Self.globalMetadata` to make
     // things more explicit.
-    private static var globalPayload: Payload {
+    private static var globalMetadata: Metadata {
         .init()
     }
 
@@ -108,7 +108,7 @@ where
     }
 
     public func hasCapacity(
-        forPayload payload: Payload?
+        forMetadata metadata: Metadata?
     ) -> Bool {
         true
     }
@@ -117,7 +117,7 @@ where
         .alive
     }
 
-    public mutating func insert(payload: Payload) -> Index {
+    public mutating func insert(metadata: Metadata) -> Index {
         #if DEBUG
         logger.trace("\(type(of: self)).\(#function)")
         self.logState(to: logger)
@@ -169,14 +169,14 @@ where
 
     public mutating func use(
         _ index: Index,
-        payload: Payload
+        metadata: Metadata
     ) -> Index {
         logger.trace("\(type(of: self)).\(#function)")
 
         return index
     }
 
-    public mutating func remove() -> (index: Index, payload: Payload)? {
+    public mutating func remove() -> (index: Index, metadata: Metadata)? {
         #if DEBUG
         logger.trace("\(type(of: self)).\(#function)")
         self.logState(to: logger)
@@ -219,12 +219,12 @@ where
         self.count -= 1
 
         let index = Self.index(chunk: chunkIndex, bit: endBitIndex)
-        let payload = Self.globalPayload
+        let metadata = Self.globalMetadata
 
-        return (index, payload)
+        return (index, metadata)
     }
 
-    public mutating func remove(_ index: Index) -> Payload {
+    public mutating func remove(_ index: Index) -> Metadata {
         #if DEBUG
         logger.trace("\(type(of: self)).\(#function)")
         self.logState(to: logger)
@@ -242,7 +242,7 @@ where
         self.chunks[chunkIndex].setZeros(atMask: mask)
         self.count -= 1
 
-        return Self.globalPayload
+        return Self.globalMetadata
     }
 
     public mutating func removeExpired(

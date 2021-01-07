@@ -19,10 +19,10 @@ public struct CustomLruPolicy<RawIndex>: CachePolicy
 where
     RawIndex: BinaryInteger
 {
-    public typealias Index = BufferedDeque<Payload, RawIndex>.Index
-    public typealias Payload = NoPayload
+    public typealias Index = BufferedDeque<Metadata, RawIndex>.Index
+    public typealias Metadata = NoMetadata
 
-    internal typealias Deque = BufferedDeque<Payload, RawIndex>
+    internal typealias Deque = BufferedDeque<Metadata, RawIndex>
     internal typealias Node = Deque.Node
 
     public var isEmpty: Bool {
@@ -61,7 +61,7 @@ where
     }
 
     public func hasCapacity(
-        forPayload payload: Payload?
+        forMetadata metadata: Metadata?
     ) -> Bool {
         true
     }
@@ -70,7 +70,7 @@ where
         .alive
     }
 
-    public mutating func insert(payload: Payload) -> Index {
+    public mutating func insert(metadata: Metadata) -> Index {
         #if DEBUG
         logger.trace("\(type(of: self)).\(#function)")
         self.logState(to: logger)
@@ -83,12 +83,12 @@ where
         }
         #endif
 
-        return self.deque.pushFront(element: payload)
+        return self.deque.pushFront(element: metadata)
     }
 
     public mutating func use(
         _ index: Index,
-        payload: Payload
+        metadata: Metadata
     ) -> Index {
         #if DEBUG
         logger.trace("\(type(of: self)).\(#function)")
@@ -107,7 +107,7 @@ where
         return index
     }
 
-    public mutating func remove() -> (index: Index, payload: Payload)? {
+    public mutating func remove() -> (index: Index, metadata: Metadata)? {
         #if DEBUG
         logger.trace("\(type(of: self)).\(#function)")
         self.logState(to: logger)
@@ -120,14 +120,14 @@ where
         }
         #endif
 
-        guard let (index, payload) = self.deque.popBack() else {
+        guard let (index, metadata) = self.deque.popBack() else {
             return nil
         }
 
-        return (index, payload)
+        return (index, metadata)
     }
 
-    public mutating func remove(_ index: Index) -> Payload {
+    public mutating func remove(_ index: Index) -> Metadata {
         #if DEBUG
         logger.trace("\(type(of: self)).\(#function)")
         self.logState(to: logger)

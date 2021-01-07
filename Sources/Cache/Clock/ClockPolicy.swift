@@ -20,7 +20,7 @@ where
     Bits: FixedWidthInteger & UnsignedInteger
 {
     public typealias Index = ChunkedBitIndex
-    public typealias Payload = NoPayload
+    public typealias Metadata = NoMetadata
 
     internal typealias Chunk = BitChunk<Bits>
     internal typealias Block = ClockBlock<Bits>
@@ -31,10 +31,10 @@ where
     }
 
     // Since there is only a single possible instance
-    // of `Payload` (aka `NoPayload`) we
-    // access it via `Self.globalPayload` to make
+    // of `Metadata` (aka `NoMetadata`) we
+    // access it via `Self.globalMetadata` to make
     // things more explicit.
-    private static var globalPayload: Payload {
+    private static var globalMetadata: Metadata {
         .init()
     }
 
@@ -111,7 +111,7 @@ where
     }
 
     public func hasCapacity(
-        forPayload payload: Payload?
+        forMetadata metadata: Metadata?
     ) -> Bool {
         true
     }
@@ -120,7 +120,7 @@ where
         .alive
     }
 
-    public mutating func insert(payload: Payload) -> Index {
+    public mutating func insert(metadata: Metadata) -> Index {
         #if DEBUG
         logger.trace("\(type(of: self)).\(#function)")
         self.logState(to: logger)
@@ -186,7 +186,7 @@ where
 
     public mutating func use(
         _ index: Index,
-        payload: Payload
+        metadata: Metadata
     ) -> Index {
         #if DEBUG
         logger.trace("\(type(of: self)).\(#function)")
@@ -210,7 +210,7 @@ where
         return index
     }
 
-    public mutating func remove() -> (index: Index, payload: Payload)? {
+    public mutating func remove() -> (index: Index, metadata: Metadata)? {
         #if DEBUG
         logger.trace("\(type(of: self)).\(#function)")
         self.logState(to: logger)
@@ -260,7 +260,7 @@ where
         assert(didFindVictim)
 
         let index = Self.index(chunk: chunkIndex, bit: bitIndex)
-        let payload = Self.globalPayload
+        let metadata = Self.globalMetadata
 
         let indexMask = Chunk.mask(index: bitIndex)
 
@@ -271,10 +271,10 @@ where
         self.cursors.remove = index.advanced(by: 1)
         self.count -= 1
 
-        return (index, payload)
+        return (index, metadata)
     }
 
-    public mutating func remove(_ index: Index) -> Payload {
+    public mutating func remove(_ index: Index) -> Metadata {
         #if DEBUG
         logger.trace("\(type(of: self)).\(#function)")
         self.logState(to: logger)
@@ -296,7 +296,7 @@ where
 
         self.count -= 1
 
-        return Self.globalPayload
+        return Self.globalMetadata
     }
 
     public mutating func removeExpired(

@@ -8,7 +8,7 @@ where
     Policy: CachePolicy
 {
     public typealias Element = (key: Key, value: Value)
-    public typealias Payload = Policy.Payload
+    public typealias Metadata = Policy.Metadata
 
     internal typealias Index = Policy.Index
     internal typealias Storage = CustomCacheStorage<Key, Value, Policy>
@@ -28,11 +28,11 @@ where
     }
 
     internal fileprivate(set) var storage: Storage
-    internal let defaultPayload: Payload
+    internal let defaultMetadata: Metadata
 
     /// Creates an empty cache with preallocated space
     /// for at least the specified number of values
-    /// and a `defaultPayload` of `Payload.default`.
+    /// and a `defaultMetadata` of `Metadata.default`.
     ///
     /// - Note:
     ///   For performance reasons, the size of the newly allocated
@@ -50,11 +50,11 @@ where
         policy policyProvider: (Int) -> Policy
     )
     where
-        Payload: DefaultCachePayload
+        Metadata: DefaultCacheMetadata
     {
         self.init(
             minimumCapacity: minimumCapacity,
-            defaultPayload: .default,
+            defaultMetadata: .default,
             policy: policyProvider
         )
     }
@@ -71,13 +71,13 @@ where
     /// - Parameters:
     ///   - minimumCapacity:
     ///     The minimum number of elements to provide initial capacity for.
-    ///   - defaultPayload:
-    ///     The default payload to use when not explicitly provided.
+    ///   - defaultMetadata:
+    ///     The default metadata to use when not explicitly provided.
     ///   - policy:
     ///     The cache's desired policy for a given `minimumCapacity`.
     public init(
         minimumCapacity: Int = 0,
-        defaultPayload: Payload,
+        defaultMetadata: Metadata,
         policy policyProvider: (Int) -> Policy
     ) {
         self.storage = .init(
@@ -85,21 +85,21 @@ where
             elementsByIndex: .init(minimumCapacity: minimumCapacity),
             policy: policyProvider(minimumCapacity)
         )
-        self.defaultPayload = defaultPayload
+        self.defaultMetadata = defaultMetadata
     }
 
     public mutating func cachedValue(
         forKey key: Key,
-        payload: Payload? = nil,
+        metadata: Metadata? = nil,
         didMiss: UnsafeMutablePointer<Bool>? = nil,
         by closure: () throws -> Value
     ) rethrows -> Value {
-        let payload = payload ?? self.defaultPayload
+        let metadata = metadata ?? self.defaultMetadata
 
         return try self.modifyStorage { storage in
             try storage.cachedValue(
                 forKey: key,
-                payload: payload,
+                metadata: metadata,
                 didMiss: didMiss,
                 by: closure
             )
@@ -108,14 +108,14 @@ where
 
     public mutating func value(
         forKey key: Key,
-        payload: Payload? = nil
+        metadata: Metadata? = nil
     ) -> Value? {
-        let payload = payload ?? self.defaultPayload
+        let metadata = metadata ?? self.defaultMetadata
 
         return self.modifyStorage { storage in
             storage.value(
                 forKey: key,
-                payload: payload
+                metadata: metadata
             )
         }
     }
@@ -129,15 +129,15 @@ where
     public mutating func setValue(
         _ value: Value?,
         forKey key: Key,
-        payload: Payload? = nil
+        metadata: Metadata? = nil
     ) {
-        let payload = payload ?? self.defaultPayload
+        let metadata = metadata ?? self.defaultMetadata
 
         return self.modifyStorage { storage in
             storage.setValue(
                 value,
                 forKey: key,
-                payload: payload
+                metadata: metadata
             )
         }
     }
@@ -146,15 +146,15 @@ where
     public mutating func updateValue(
         _ value: Value,
         forKey key: Key,
-        payload: Payload? = nil
+        metadata: Metadata? = nil
     ) -> Value? {
-        let payload = payload ?? self.defaultPayload
+        let metadata = metadata ?? self.defaultMetadata
 
         return self.modifyStorage { storage in
             storage.updateValue(
                 value,
                 forKey: key,
-                payload: payload
+                metadata: metadata
             )
         }
     }
