@@ -8,7 +8,7 @@ public typealias FifoPolicy = CustomFifoPolicy<UInt32>
 
 public struct CustomFifoPolicy<RawIndex>: CachePolicy
 where
-    RawIndex: BinaryInteger
+    RawIndex: FixedWidthInteger & UnsignedInteger
 {
     public typealias Index = BufferedDeque<Metadata, RawIndex>.Index
     public typealias Metadata = NoMetadata

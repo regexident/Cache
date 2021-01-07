@@ -3,7 +3,7 @@ import XCTest
 @testable import Cache
 
 final class FifoPolicyTests: XCTestCase {
-    typealias Policy = CustomFifoPolicy<Int>
+    typealias Policy = CustomFifoPolicy<UInt>
     typealias Index = Policy.Index
 
     func testInit() throws {

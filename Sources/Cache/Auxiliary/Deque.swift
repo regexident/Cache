@@ -6,14 +6,14 @@ import Logging
 
 internal struct BufferedDequeFreeNode<RawIndex>: Equatable
 where
-    RawIndex: BinaryInteger
+    RawIndex: FixedWidthInteger & UnsignedInteger
 {
     var nextFree: RawIndex?
 }
 
 internal struct BufferedDequeOccupiedNode<Element, RawIndex>
 where
-    RawIndex: BinaryInteger
+    RawIndex: FixedWidthInteger & UnsignedInteger
 {
     var element: Element
     var previous: RawIndex?
@@ -29,7 +29,7 @@ where
 
 internal enum BufferedDequeNode<Element, RawIndex>
 where
-    RawIndex: BinaryInteger
+    RawIndex: FixedWidthInteger & UnsignedInteger
 {
     internal typealias Free = BufferedDequeFreeNode<RawIndex>
     internal typealias Occupied = BufferedDequeOccupiedNode<Element, RawIndex>
@@ -47,7 +47,7 @@ where
 
 public struct BufferedDeque<Element, RawIndex>
 where
-    RawIndex: BinaryInteger
+    RawIndex: FixedWidthInteger & UnsignedInteger
 {
     public typealias Index = OpaqueIndex<RawIndex>
     internal typealias Node = BufferedDequeNode<Element, RawIndex>

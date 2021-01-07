@@ -4,20 +4,20 @@
 
 import Logging
 
-public typealias LruCache<Key, Value> = CustomLruCache<Key, Value, Int>
+public typealias LruCache<Key, Value> = CustomLruCache<Key, Value, UInt32>
 where
     Key: Hashable
 
 public typealias CustomLruCache<Key, Value, Index> = CustomCache<Key, Value, CustomLruPolicy<Index>>
 where
     Key: Hashable,
-    Index: BinaryInteger
+    Index: FixedWidthInteger & UnsignedInteger
 
 public typealias LruPolicy = CustomLruPolicy<UInt32>;
 
 public struct CustomLruPolicy<RawIndex>: CachePolicy
 where
-    RawIndex: BinaryInteger
+    RawIndex: FixedWidthInteger & UnsignedInteger
 {
     public typealias Index = BufferedDeque<Metadata, RawIndex>.Index
     public typealias Metadata = NoMetadata
