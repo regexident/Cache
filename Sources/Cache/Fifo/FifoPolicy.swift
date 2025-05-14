@@ -4,8 +4,19 @@
 
 import Foundation
 
+/// First-in, first-out cache policy.
+///
+/// See `CustomFifoPolicy<…>` for more info.
 public typealias FifoPolicy = CustomFifoPolicy<UInt32>
 
+/// First-in, first-out cache policy.
+///
+/// A simple cache eviction strategy where the oldest cache entry
+/// (i.e., the one added earliest) is evicted when the cache is full.
+///
+/// This policy operates on the assumption that the order of insertion
+/// reflects relevance over time, making it straightforward and predictable,
+/// though it may not always align with actual access patterns.
 public struct CustomFifoPolicy<RawIndex>: CachePolicy
 where
     RawIndex: FixedWidthInteger & UnsignedInteger

@@ -4,18 +4,20 @@
 
 import Logging
 
-public typealias RrCache<Key, Value> = CustomRrCache<Key, Value, UInt64, SystemRandomNumberGenerator>
-where
-    Key: Hashable
-
-public typealias CustomRrCache<Key, Value, Bits, Generator> = CustomCache<Key, Value, CustomRrPolicy<Bits, Generator>>
-where
-    Key: Hashable,
-    Bits: FixedWidthInteger & UnsignedInteger,
-    Generator: RandomNumberGenerator
-
+/// Random replacement cache policy.
+///
+/// See `CustomRrPolicy<…>` for more info.
 public typealias RrPolicy = CustomRrPolicy<UInt64, SystemRandomNumberGenerator>
 
+/// Random replacement cache policy.
+///
+/// A simple cache eviction strategy
+/// where a random cache entry is evicted when the cache is full.
+///
+/// This method is particularly useful in scenarios where access patterns are unpredictable,
+/// as it offers equal opportunities for all entries to remain in the cache.
+///
+/// It's a lightweight approach with minimal computational overhead, making it suitable for environments where resource optimization is crucial.
 public struct CustomRrPolicy<Bits, Generator>: CachePolicy
 where
     Bits: FixedWidthInteger & UnsignedInteger,

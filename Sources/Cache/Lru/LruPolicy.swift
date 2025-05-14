@@ -4,17 +4,17 @@
 
 import Logging
 
-public typealias LruCache<Key, Value> = CustomLruCache<Key, Value, UInt32>
-where
-    Key: Hashable
-
-public typealias CustomLruCache<Key, Value, Index> = CustomCache<Key, Value, CustomLruPolicy<Index>>
-where
-    Key: Hashable,
-    Index: FixedWidthInteger & UnsignedInteger
-
+/// Least recently used cache policy.
+///
+/// See `CustomLruPolicy<…>` for more info.
 public typealias LruPolicy = CustomLruPolicy<UInt32>;
 
+/// Least recently used cache policy.
+///
+/// A simple cache eviction strategy
+/// where the least recently accessed cache entry is evicted when the cache is full.
+///
+/// This policy assumes that data accessed in the past is less likely to be needed in the near future.
 public struct CustomLruPolicy<RawIndex>: CachePolicy
 where
     RawIndex: FixedWidthInteger & UnsignedInteger
