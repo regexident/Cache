@@ -11,12 +11,13 @@ extension CustomRrPolicy {
 
     internal init(
         count: Int,
-        chunkBits: [Bits]
+        chunkBits: [Bits],
+        generator: Generator
     ) {
         self.init(
             count: count,
             chunks: chunkBits.map { .init(bits: $0) },
-            generator: .init()
+            generator: generator
         )
     }
 }

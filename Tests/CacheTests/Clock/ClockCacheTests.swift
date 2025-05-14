@@ -14,6 +14,10 @@ final class ClockCacheTests: XCTestCase {
     typealias Policy = CapacityPolicy<CustomClockPolicy<Bits>>
     typealias Cache = CustomCache<Key, Value, Policy>
 
+    static func makeGenerator() -> SplitMix64 {
+        .init(seed: 0)
+    }
+
     func cache<Value>(
         minimumCapacity: Int = 0,
         maximumCapacity: Int
@@ -309,7 +313,7 @@ final class ClockCacheTests: XCTestCase {
             keys: { keys in
                 UniformRandomKeyGenerator(
                     range: 0..<keys,
-                    generator: SplitMix64()
+                    generator: Self.makeGenerator()
                 )
             }
         )
@@ -334,7 +338,7 @@ final class ClockCacheTests: XCTestCase {
                 ZipfianRandomKeyGenerator(
                     range: 0..<keys,
                     theta: 0.99,
-                    generator: SplitMix64()
+                    generator: Self.makeGenerator()
                 )
             }
         )

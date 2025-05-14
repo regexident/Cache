@@ -134,13 +134,19 @@ func makeKeysFor(
 }
 
 @discardableResult
-func runWith<P>(policy: P.Type, capacity: Int, keys: [Key]) -> Int
+func runWith<P>(
+    minimumCapacity: Int,
+    policy: (Int) -> P,
+    defaultMetadata: P.Metadata,
+    keys: [Key]
+) -> Int
 where
     P: CachePolicy
 {
     return cacheHitsUsing(
-        policy: P.self,
-        capacity: capacity,
+        minimumCapacity: minimumCapacity,
+        policy: policy,
+        defaultMetadata: defaultMetadata,
         keys: keys
     )
 }
@@ -156,16 +162,21 @@ func measureTime(
 
 @discardableResult
 func cacheHitsUsing<P>(
-    policy: P.Type,
-    capacity: Int,
+    minimumCapacity: Int,
+    policy: (Int) -> P,
+    defaultMetadata: P.Metadata,
     keys: [Key]
 ) -> Int
 where
     P: CachePolicy
 {
-    typealias Cache = CustomCache<Key, Value, Cost, P>
+    typealias Cache = CustomCache<Key, Value, P>
 
-    var cache = Cache(totalCostLimit: capacity)
+    var cache = Cache(
+        minimumCapacity: minimumCapacity,
+        defaultMetadata: defaultMetadata,
+        policy: policy
+    )
 
     var hits: Int = 0
 

@@ -10,22 +10,26 @@ final class RrPolicyTests: XCTestCase {
     typealias Policy = CustomRrPolicy<Bits, Generator>
     typealias Index = Policy.Index
 
+    static func makeGenerator() -> SplitMix64 {
+        .init(seed: 0)
+    }
+
     func testInit() throws {
-        let policy = Policy()
+        let policy = Policy(generator: Self.makeGenerator())
 
         XCTAssertEqual(policy.count, 0)
         XCTAssertEqual(policy.chunks, [])
     }
 
     func testHasCapacity() throws {
-        let policy = Policy()
+        let policy = Policy(generator: Self.makeGenerator())
 
         XCTAssertTrue(policy.hasCapacity(forMetadata: nil))
         XCTAssertTrue(policy.hasCapacity(forMetadata: .default))
     }
 
     func testStateOf() throws {
-        var policy = Policy()
+        var policy = Policy(generator: Self.makeGenerator())
 
         let index = policy.insert(metadata: .default)
 
@@ -33,7 +37,7 @@ final class RrPolicyTests: XCTestCase {
     }
 
     func testInsertIntoEmptyPolicy() throws {
-        var policy = Policy()
+        var policy = Policy(generator: Self.makeGenerator())
 
         let index = policy.insert(metadata: .default)
 
@@ -45,7 +49,7 @@ final class RrPolicyTests: XCTestCase {
     }
 
     func testInsertIntoDenselyFilledPolicy() throws {
-        var policy = Policy()
+        var policy = Policy(generator: Self.makeGenerator())
 
         for _ in 0..<3 {
             let _ = policy.insert(metadata: .default)
@@ -67,7 +71,8 @@ final class RrPolicyTests: XCTestCase {
     func testInsertIntoSparselyFilledPolicy() throws {
         var policy = Policy(
             count: 3,
-            chunkBits: [0b00011001]
+            chunkBits: [0b00011001],
+            generator: Self.makeGenerator()
         )
 
         let index = policy.insert(metadata: .default)
@@ -80,7 +85,8 @@ final class RrPolicyTests: XCTestCase {
     func testInsertIntoSaturatedPolicy() {
         var policy = Policy(
             count: 8,
-            chunkBits: [0b11111111]
+            chunkBits: [0b11111111],
+            generator: Self.makeGenerator()
         )
 
         let index = policy.insert(metadata: .default)
@@ -93,7 +99,8 @@ final class RrPolicyTests: XCTestCase {
     func testUse() throws {
         var policy = Policy(
             count: 3,
-            chunkBits: [0b00011010]
+            chunkBits: [0b00011010],
+            generator: Self.makeGenerator()
         )
 
         let index = policy.use(.init(3), metadata: .default)
@@ -110,7 +117,8 @@ final class RrPolicyTests: XCTestCase {
     func testRemoveFromFullPolicy() throws {
         var policy = Policy(
             count: 8,
-            chunkBits: [0b11111111]
+            chunkBits: [0b11111111],
+            generator: Self.makeGenerator()
         )
 
         let (index, _) = try XCTUnwrap(policy.remove())
@@ -121,7 +129,7 @@ final class RrPolicyTests: XCTestCase {
     }
 
     func testRemoveFromDenselyFilledPolicy() throws {
-        var policy = Policy()
+        var policy = Policy(generator: Self.makeGenerator())
 
         for _ in 0..<3 {
             let _ = policy.insert(metadata: .default)
@@ -140,7 +148,8 @@ final class RrPolicyTests: XCTestCase {
     func testRemoveFromSparselyFilledPolicy() throws {
         var policy = Policy(
             count: 3,
-            chunkBits: [0b00011010]
+            chunkBits: [0b00011010],
+            generator: Self.makeGenerator()
         )
 
         let (index, _) = try XCTUnwrap(policy.remove())
@@ -153,7 +162,8 @@ final class RrPolicyTests: XCTestCase {
     func testRemoveIndex() throws {
         var policy = Policy(
             count: 3,
-            chunkBits: [0b00011010]
+            chunkBits: [0b00011010],
+            generator: Self.makeGenerator()
         )
 
         let _ = policy.remove(.init(1))
@@ -173,7 +183,7 @@ final class RrPolicyTests: XCTestCase {
     }
 
     func testRemoveExpired() throws {
-        var policy = Policy()
+        var policy = Policy(generator: Self.makeGenerator())
 
         for _ in 0..<3 {
             let _ = policy.insert(metadata: .default)
@@ -187,7 +197,7 @@ final class RrPolicyTests: XCTestCase {
     }
 
     func testRemoveAll() throws {
-        var policy = Policy()
+        var policy = Policy(generator: Self.makeGenerator())
 
         for _ in 0..<3 {
             let _ = policy.insert(metadata: .default)
@@ -201,7 +211,7 @@ final class RrPolicyTests: XCTestCase {
     }
 
     func testRemoveAllKeepingCapacity() throws {
-        var policy = Policy()
+        var policy = Policy(generator: Self.makeGenerator())
 
         for _ in 0..<3 {
             let _ = policy.insert(metadata: .default)

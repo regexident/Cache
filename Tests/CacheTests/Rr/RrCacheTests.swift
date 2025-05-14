@@ -15,6 +15,10 @@ final class RrCacheTests: XCTestCase {
     typealias Policy = CapacityPolicy<CustomRrPolicy<Bits, Generator>>
     typealias Cache = CustomCache<Key, Value, Policy>
 
+    static func makeGenerator() -> SplitMix64 {
+        .init(seed: 0)
+    }
+
     func cache<Value>(
         minimumCapacity: Int = 0,
         maximumCapacity: Int,
@@ -323,7 +327,7 @@ final class RrCacheTests: XCTestCase {
             keys: { keys in
                 UniformRandomKeyGenerator(
                     range: 0..<keys,
-                    generator: SplitMix64()
+                    generator: Self.makeGenerator()
                 )
             }
         )
@@ -347,7 +351,7 @@ final class RrCacheTests: XCTestCase {
                 ZipfianRandomKeyGenerator(
                     range: 0..<keys,
                     theta: 0.99,
-                    generator: SplitMix64()
+                    generator: Self.makeGenerator()
                 )
             }
         )

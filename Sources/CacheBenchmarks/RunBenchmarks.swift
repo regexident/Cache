@@ -6,7 +6,7 @@ import Benchmark
 import Cache
 import PseudoRandom
 
-typealias BenchmarkPolicyLru = CustomLruPolicy<Int>
+typealias BenchmarkPolicyLru = CustomLruPolicy<UInt64>
 typealias BenchmarkPolicyRr = CustomRrPolicy<UInt64, SplitMix64>
 typealias BenchmarkPolicyClock = CustomClockPolicy<UInt64>
 
@@ -55,24 +55,34 @@ internal struct RunBenchmarks: ParsableCommand {
 
             suite.benchmark("lru") {
                 runWith(
-                    policy: BenchmarkPolicyLru.self,
-                    capacity: capacity,
+                    minimumCapacity: capacity,
+                    policy: { capacity in BenchmarkPolicyLru(
+                        minimumCapacity: capacity
+                    ) },
+                    defaultMetadata: BenchmarkPolicyLru.Metadata.default,
                     keys: keys
                 )
             }
 
             suite.benchmark("rr") {
                 runWith(
-                    policy: BenchmarkPolicyRr.self,
-                    capacity: capacity,
+                    minimumCapacity: capacity,
+                    policy: { capacity in BenchmarkPolicyRr(
+                        minimumCapacity: capacity,
+                        generator: .init(seed: 42)
+                    ) },
+                    defaultMetadata: BenchmarkPolicyRr.Metadata.default,
                     keys: keys
                 )
             }
 
             suite.benchmark("clock") {
                 runWith(
-                    policy: BenchmarkPolicyClock.self,
-                    capacity: capacity,
+                    minimumCapacity: capacity,
+                    policy: { capacity in BenchmarkPolicyClock(
+                        minimumCapacity: capacity
+                    ) },
+                    defaultMetadata: BenchmarkPolicyClock.Metadata.default,
                     keys: keys
                 )
             }

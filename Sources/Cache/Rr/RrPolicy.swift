@@ -12,14 +12,14 @@ public typealias CustomRrCache<Key, Value, Bits, Generator> = CustomCache<Key, V
 where
     Key: Hashable,
     Bits: FixedWidthInteger & UnsignedInteger,
-    Generator: InitializableRandomNumberGenerator
+    Generator: RandomNumberGenerator
 
 public typealias RrPolicy = CustomRrPolicy<UInt64, SystemRandomNumberGenerator>
 
 public struct CustomRrPolicy<Bits, Generator>: CachePolicy
 where
     Bits: FixedWidthInteger & UnsignedInteger,
-    Generator: InitializableRandomNumberGenerator
+    Generator: RandomNumberGenerator
 {
     public typealias Index = ChunkedBitIndex
     public typealias Metadata = NoMetadata
@@ -46,23 +46,10 @@ where
     internal private(set) var chunks: [Chunk]
     internal private(set) var generator: Generator
 
-    public init() {
-        self.init(generator: .init())
-    }
-
     public init(generator: Generator) {
         self.init(
             minimumCapacity: 0,
             generator: generator
-        )
-    }
-
-    public init(
-        minimumCapacity: Int = 0
-    ) {
-        self.init(
-            minimumCapacity: minimumCapacity,
-            generator: .init()
         )
     }
 
