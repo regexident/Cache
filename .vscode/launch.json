@@ -1,0 +1,22 @@
+{
+    "configurations": [
+        {
+            "type": "swift",
+            "request": "launch",
+            "args": [],
+            "cwd": "${workspaceFolder:Cache}",
+            "name": "Debug CacheBenchmarks",
+            "program": "${workspaceFolder:Cache}/.build/debug/CacheBenchmarks",
+            "preLaunchTask": "swift: Build Debug CacheBenchmarks"
+        },
+        {
+            "type": "swift",
+            "request": "launch",
+            "args": [],
+            "cwd": "${workspaceFolder:Cache}",
+            "name": "Release CacheBenchmarks",
+            "program": "${workspaceFolder:Cache}/.build/release/CacheBenchmarks",
+            "preLaunchTask": "swift: Build Release CacheBenchmarks"
+        }
+    ]
+}
